@@ -110,9 +110,10 @@ function draw_aRect(c_fill, c_stroke, aRect) {
 /* Some setup for the Canvas */
 window.onresize = do_resize;
 function do_resize() {
+    lastImg = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	canvas.width = window.innerWidth - 25;
     canvas.height = window.innerHeight - 15;
-    draw_GraphPaper();
+    ctx.putImageData(lastImg, 0, 0);
 }
 function initalize(){
 	canvas = document.getElementById("canvas");
