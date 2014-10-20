@@ -1,5 +1,6 @@
 * {
 	color: #ffffff;
+	font-family: Consolas;
 }
 canvas {
 	margin: 0 auto;
@@ -11,9 +12,12 @@ body {
 	height: 100%;
 	margin: 0;
 }
+h1 {
+	margin-top: 0;
+	margin-bottom: 0;
+}
 .title {
 	text-align: center;
-	font-family: Consolas;
 	text-shadow: 0px 0px 5px #f00;
 	position: fixed;
 	padding: 0;
@@ -22,10 +26,27 @@ body {
 	left: 0px;
 	width: 60%;
 	margin: 0 20%;
-	color: #fff;
 	background-color: #000;
 }
-h1 {
-	margin-top: 0;
-	margin-bottom: 0;
+.tool-bar {
+	position: fixed;
+	padding: 0 2px;
+	border-bottom: 2px solid rgba(255, 0, 0, 0.4);
+	top:  10px;
+	left: 17px;
+	width: 15%;
+	z-index: 500;
+	color: #fff;
+	background-color: rgba(0, 0, 0, 0.7);
+	box-shadow: 2px 2px 2px grey;
+}
+.tool-bar .tool {
+	border-top: 2px solid rgba(255, 0, 0, 0.4);
+	padding: 5px 0;
+	text-align: center;
+	min-height: 1.6em;
+}
+.tool-bar .tool.eraseAll button{
+	width: 66.6%;
+	color: black;
 }
