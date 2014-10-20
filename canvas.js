@@ -2,32 +2,91 @@
 	Mark Odell : Drawing Interactive Triangles
     The purpose of this assignment is to be able to interactively draw rectangle shapes with rubberbanding onto a "graph paper" canvas. We use the term rubberbanding for when refering to when a mouse click is up or down.
 */
-var canvas, ctx;
 var FULLSCREEN = false;
-var REC_COLOR, GRAPH_COLOR; 
+var REC_COLOR,
+    GRAPH_COLOR = "paleTurquoise",
+    GRAPH_UNITS = 20; 
+var canvas, ctx, firstPt, secondPt, lastRect;
+
+// Setup function for loading the page
+window.onload = function () {
+    initalize();
+    draw_GraphPaper();
+    canvas.addEventListener("mousedown", do_mouseDown);
+    canvas.addEventListener("mouseup", do_mouseUp);
+
+};
 
 // Need two listeners: Mouse Down, Mouse Up
 // Mouse Down()
-//      Save point where mouse is currently
+function do_mouseDown(event) {
+    // Save point where mouse is currently
+    firstPt = { x:event.clientX - canvas.offsetLeft,
+                y:event.clientY - canvas.offsetTop  };
+}
+
 // Mouse Up()
-//      Save point where mouse is currently
-//      Use previously saved point and poiny from Mouse Down to draw a rect
+function do_mouseUp(event){
+    // Save point where mouse is currently
+    secondPt = { x:event.clientX - canvas.offsetLeft,
+                 y:event.clientY - canvas.offsetTop  };
+    // Use previously saved point and point from Mouse Down to draw a rect
+    lastRect = { x: firstPt.x,
+                 y: firstPt.y,
+                 w: secondPt.x - firstPt.x,
+                 h: secondPt.y - firstPt.y };
+    draw_aRect(REC_COLOR, lastRect);
+}
 
 // ExtraC: Add UI somewhere that give coordinates of where
 // mouse is currently, regards of being clicked.
 
 
+
+/*
+ *  Draws a engineering like graph paper on the canvas
+ *  with the given color and unit parameters. This function
+ *  defaults to the globally defined variables for color and units.
+ *  @param color    A color string
+ *  @param units    Number of pixels to determine the square size
+ */
+function draw_GraphPaper(color, units) {
+    ctx.save();
+
+    ctx.strokeStyle = color || GRAPH_COLOR;
+    ctx.beginPath();
+    var i = 0.5;
+    while(i <= canvas.width || i <= canvas.height) {
+        if(i <= canvas.width){
+            ctx.moveTo(i, 0.5);
+            ctx.lineTo(i, canvas.height);
+        }
+        if(i <= canvas.height){
+            ctx.moveTo(0.5, i);
+            ctx.lineTo(canvas.width, i);
+        }
+        i += units || GRAPH_UNITS;
+    }
+    ctx.stroke();
+
+    ctx.restore();
+}
+/*
+    Simple helper function to draw a stroked rectangle
+*/
+function draw_aRect(color, aRect) {
+    ctx.strokeRect(aRect.x, aRect.y, aRect.w, aRect.h);
+    ctx.fillRect(aRect.x, aRect.y, aRect.w, aRect.h);
+}
+
 /* Some Setup functions I use to make the page look nice-er */
-// Setup function for loading the page
-window.onload = function () {
-	initalize();
-};
 
 /* Some setup for the Canvas */
-window.onresize = resizeCanvas;
-function resizeCanvas() {
+window.onresize = do_resize;
+function do_resize() {
 	canvas.width = window.innerWidth - 25;
     canvas.height = window.innerHeight - 15;
+    draw_GraphPaper();
 }
 function initalize(){
 	canvas = document.getElementById("canvas");
@@ -38,5 +97,5 @@ function initalize(){
     	alert('Canvas could not be found by ID:' + canvas);
     	return;
     }
-    resizeCanvas();
+    do_resize();
 }
