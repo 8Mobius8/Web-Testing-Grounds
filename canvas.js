@@ -5,18 +5,15 @@
 var ID_color_picker = 'color',
     ID_brush_select = 'brush',
     ID_erase_button = 'erase';
-var COLOR_fill,
-    COLOR_stroke,
-    TOOL_brush,
-    GRAPH_COLOR = "paleTurquoise",
-    GRAPH_UNITS = 20; 
+var GRAPH_COLOR = "paleTurquoise",
+    GRAPH_UNITS = 20;
+var max_w, max_h;
 var canvas, ctx, firstPt, secondPt, lastRect, lastImg, isMouseDown;
 
 // Setup function for loading the page
 window.onload = function () {
     initalize();
     draw_GraphPaper();
-    update_Tools();
     add_Listeners();
 };
 
@@ -37,10 +34,15 @@ function do_mouseUp(event){
 
 function do_mouseAt(event){
     if(isMouseDown){
+        var stroke = document.getElementById(ID_color_picker).value;
+        var fill = hex_to_rgba(stroke, 0.4);
+        var brush = document.getElementById(ID_brush_select).value;
         // Restore image when first clicked (rubberbanding)
         ctx.putImageData(lastImg, 0, 0);
-        // Draw rect from orginal point to currently location
-        
+        // Draw shape from orginal point to currently location
+        secondPt = { x:event.clientX - canvas.offsetLeft,
+                     y:event.clientY - canvas.offsetTop  };
+        draw_selectedShape(brush, firstPt, secondPt, stroke, fill);
     }
 }
 
@@ -49,18 +51,18 @@ function do_mouseAt(event){
 
 
 
-function draw_selectedShape(pt1, pt2, color){
-    if(TOOL_brush == 'line') {
-        draw_aLine(color, pt1, pt2);
-    } else if(TOOL_brush == 'rect'){
+function draw_selectedShape(tool, pt1, pt2, stroke, fill){
+    if(tool == 'line') {
+        draw_aLine(stroke, pt1, pt2);
+    } else if(tool == 'rect'){
         lastRect = { x: firstPt.x,
                      y: firstPt.y,
                      w: event.clientX - canvas.offsetLeft - firstPt.x,
                      h: event.clientY - canvas.offsetTop - firstPt.y };
-        draw_aRect(null, null, lastRect);
-    } else if (TOOL_brush == 'tri') {
+        draw_aRect(stroke, fill, lastRect);
+    } else if (tool == 'tri') {
 
-    } else if (TOOL_brush == 'eclipse') {
+    } else if (tool == 'eclipse') {
 
     }
 }
@@ -77,7 +79,7 @@ function draw_GraphPaper(color, units) {
     ctx.save();
 
     ctx.strokeStyle = color || GRAPH_COLOR;
-    
+    ctx.beginPath();
     var i = 0.5;
     while(i <= canvas.width || i <= canvas.height) {
         if(i <= canvas.width){
@@ -91,17 +93,18 @@ function draw_GraphPaper(color, units) {
         i += units || GRAPH_UNITS;
     }
     ctx.stroke();
+    ctx.closePath();
 
     ctx.restore();
 }
 /*
     Simple helper functions to draw shapes
 */
-function draw_aRect(c_fill, c_stroke, aRect) {
+function draw_aRect(c_stroke, c_fill, aRect) {
     ctx.save(); // Saves state of ctx vars
 
-    ctx.fillStyle = c_fill || COLOR_fill;
-    ctx.strokeStyle = c_stroke || COLOR_stroke;
+    ctx.fillStyle = c_fill;
+    ctx.strokeStyle = c_stroke;
     ctx.strokeRect(aRect.x, aRect.y, aRect.w, aRect.h);
     ctx.fillRect(aRect.x, aRect.y, aRect.w, aRect.h);
 
@@ -110,9 +113,12 @@ function draw_aRect(c_fill, c_stroke, aRect) {
 function draw_aLine(c_stroke, pt1, pt2){
     ctx.save();
 
-    ctx.strokeStyle = c_stroke || COLOR_stroke;
+    ctx.strokeStyle = c_stroke;
+    ctx.beginPath();
     ctx.moveTo(pt1.x, pt1.y);
     ctx.lineTo(pt2.x, pt2.y);
+    ctx.closePath();
+    ctx.stroke();
 
     ctx.restore();
 }
@@ -120,13 +126,6 @@ function draw_aTriangle(c_stroke, pt1, pt2){
     
 }
 /* Simple function to get values of HTML UI elements*/
-function update_Tools() {
-    COLOR_stroke = document.getElementById(ID_color_picker).value;
-    COLOR_fill = hex_to_rgba(COLOR_stroke, 0.4);
-
-    // Need to specify and save function for different shapes.
-    TOOL_brush = document.getElementById(ID_brush_select).value;
-}
 function hex_to_rgba(hexColor, alpha) {
     var red, green, blue, color;
     red = hexColor[1] + hexColor[2];
@@ -146,17 +145,23 @@ function hex_to_rgba(hexColor, alpha) {
 /* Some setup for the Canvas */
 window.onresize = do_resize;
 function do_resize() {
+    if(canvas.width > max_w)
+        max_w = canvas.width;
+    if(canvas.height > max_h)
+        max_h = canvas.height;
+    lastImg = ctx.getImageData(0, 0, max_w, max_h);
 	canvas.width = window.innerWidth - 25;
     canvas.height = window.innerHeight - 15;
-    draw_GraphPaper();
+    ctx.putImageData(lastImg, 0, 0);
 }
 function add_Listeners(){
     canvas.addEventListener("mousedown", do_mouseDown);
     canvas.addEventListener("mouseup", do_mouseUp);
     canvas.addEventListener("mousemove", do_mouseAt);
-    document.getElementById(ID_erase_button).onclick = function(){do_resize()};
-    document.getElementById(ID_color_picker).onchange = function(){update_Tools()};
-    document.getElementById(ID_brush_select).onselect = function(){update_Tools()};
+    document.getElementById(ID_erase_button).onclick = function(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        draw_GraphPaper();
+    };
 }
 function initalize(){
 	canvas = document.getElementById("canvas");
@@ -167,5 +172,7 @@ function initalize(){
     	alert('Canvas could not be found by ID:' + canvas);
     	return;
     }
+    max_h = 0;
+    max_w = 0;
     do_resize();
 }
