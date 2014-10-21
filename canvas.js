@@ -40,11 +40,7 @@ function do_mouseAt(event){
         // Restore image when first clicked (rubberbanding)
         ctx.putImageData(lastImg, 0, 0);
         // Draw rect from orginal point to currently location
-        lastRect = { x: firstPt.x,
-                     y: firstPt.y,
-                     w: event.clientX - canvas.offsetLeft - firstPt.x,
-                     h: event.clientY - canvas.offsetTop - firstPt.y };
-        draw_aRect(null, null, lastRect);
+        
     }
 }
 
@@ -54,12 +50,18 @@ function do_mouseAt(event){
 
 
 function draw_selectedShape(pt1, pt2, color){
-    if(TOOL_brush == 'rect'){
-
+    if(TOOL_brush == 'line') {
+        draw_aLine(color, pt1, pt2);
+    } else if(TOOL_brush == 'rect'){
+        lastRect = { x: firstPt.x,
+                     y: firstPt.y,
+                     w: event.clientX - canvas.offsetLeft - firstPt.x,
+                     h: event.clientY - canvas.offsetTop - firstPt.y };
+        draw_aRect(null, null, lastRect);
     } else if (TOOL_brush == 'tri') {
 
     } else if (TOOL_brush == 'eclipse') {
-        
+
     }
 }
 
@@ -113,6 +115,9 @@ function draw_aLine(c_stroke, pt1, pt2){
     ctx.lineTo(pt2.x, pt2.y);
 
     ctx.restore();
+}
+function draw_aTriangle(c_stroke, pt1, pt2){
+    
 }
 /* Simple function to get values of HTML UI elements*/
 function update_Tools() {
