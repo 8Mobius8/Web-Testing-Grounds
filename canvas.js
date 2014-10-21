@@ -52,19 +52,21 @@ function do_mouseAt(event){
 
 
 function draw_selectedShape(tool, pt1, pt2, stroke, fill){
+    ctx.save();
+
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+
     if(tool == 'line') {
-        draw_aLine(stroke, pt1, pt2);
+        draw_aLine(pt1, pt2);
     } else if(tool == 'rect'){
-        lastRect = { x: firstPt.x,
-                     y: firstPt.y,
-                     w: event.clientX - canvas.offsetLeft - firstPt.x,
-                     h: event.clientY - canvas.offsetTop - firstPt.y };
-        draw_aRect(stroke, fill, lastRect);
+        draw_aRect(pt1, pt2);
     } else if (tool == 'tri') {
-
-    } else if (tool == 'eclipse') {
-
+        draw_aRightTriangle(pt1, pt2);
+    } else if (tool == 'circle') {
+        draw_aCircle(pt1, pt2);
     }
+    ctx.restore();
 }
 
 /*
@@ -100,30 +102,40 @@ function draw_GraphPaper(color, units) {
 /*
     Simple helper functions to draw shapes
 */
-function draw_aRect(c_stroke, c_fill, aRect) {
-    ctx.save(); // Saves state of ctx vars
-
-    ctx.fillStyle = c_fill;
-    ctx.strokeStyle = c_stroke;
+function draw_aRect(pt1, pt2) {
+    aRect = {x: pt1.x,
+             y: pt1.y,
+             w: pt2.x - pt1.x,
+             h: pt2.y - pt1.y };
     ctx.strokeRect(aRect.x, aRect.y, aRect.w, aRect.h);
     ctx.fillRect(aRect.x, aRect.y, aRect.w, aRect.h);
-
-    ctx.restore(); // So that we get the saved vars back
 }
-function draw_aLine(c_stroke, pt1, pt2){
-    ctx.save();
 
-    ctx.strokeStyle = c_stroke;
+function draw_aLine(pt1, pt2) {
     ctx.beginPath();
     ctx.moveTo(pt1.x, pt1.y);
     ctx.lineTo(pt2.x, pt2.y);
     ctx.closePath();
     ctx.stroke();
-
-    ctx.restore();
 }
-function draw_aTriangle(c_stroke, pt1, pt2){
-    
+
+function draw_aRightTriangle(pt1, pt2) {
+    ctx.beginPath();
+    ctx.moveTo(pt1.x, pt1.y);
+    ctx.lineTo(pt1.x, pt2.y);
+    ctx.lineTo(pt2.x, pt2.y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+}
+
+function draw_aCircle(pt1, pt2) {
+    var r = p_distance(pt1, pt2);
+    ctx.beginPath();
+    ctx.arc(pt1.x, pt1.y, r, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
 }
 /* Simple function to get values of HTML UI elements*/
 function hex_to_rgba(hexColor, alpha) {
@@ -137,6 +149,9 @@ function hex_to_rgba(hexColor, alpha) {
     color += parseInt('0x' + blue)+', ' + alpha;
 
     return color;
+}
+function p_distance(pt1, pt2) {
+    return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
 }
 /*-------- END Functional Code ---------*/
 
