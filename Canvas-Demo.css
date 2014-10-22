@@ -36,7 +36,7 @@ h1 {
 	left: 17px;
 	width: 15%;
 	z-index: 500;
-	color: #fff;
+	color: #000;
 	background-color: rgba(0, 0, 0, 0.7);
 	box-shadow: 2px 2px 2px grey;
 }
@@ -48,5 +48,9 @@ h1 {
 }
 .tool-bar .tool.eraseAll button{
 	width: 66.6%;
+}
+.tool-bar button,
+.tool-bar select,
+.tool-bar select option {
 	color: black;
 }

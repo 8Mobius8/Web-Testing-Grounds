@@ -137,27 +137,23 @@ function draw_aCircle(pt1, pt2) {
     ctx.stroke();
     ctx.fill();
 }
-/* Simple function to get values of HTML UI elements*/
-function hex_to_rgba(hexColor, alpha) {
-    var red, green, blue, color;
-    red = hexColor[1] + hexColor[2];
-    green = hexColor[3] + hexColor[4];
-    blue = hexColor[5] + hexColor[6];
 
-    color = 'rgba(' + parseInt('0x' + red) +', ';
-    color += parseInt('0x' + green)+', ';
-    color += parseInt('0x' + blue)+', ' + alpha;
-
-    return color;
-}
-function p_distance(pt1, pt2) {
-    return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
-}
 /*-------- END Functional Code ---------*/
 
 /* Some Setup functions I use to make the page look nice-er */
 
 /* Some setup for the Canvas */
+function initalize(){
+    canvas = document.getElementById("canvas");
+    if (canvas.getContext) {
+        ctx = canvas.getContext('2d');
+        canvas.style.backgroundColor = 'white';
+    } else {
+        alert('Canvas could not be found by ID:' + canvas);
+        return;
+    }
+    do_resize();
+}
 window.onresize = do_resize;
 function do_resize() {
     if(canvas.width > max_w)
@@ -178,16 +174,21 @@ function add_Listeners(){
         draw_GraphPaper();
     };
 }
-function initalize(){
-	canvas = document.getElementById("canvas");
-    if (canvas.getContext) {
-    	ctx = canvas.getContext('2d');
-    	canvas.style.backgroundColor = 'white';
-    } else {
-    	alert('Canvas could not be found by ID:' + canvas);
-    	return;
-    }
-    max_h = 0;
-    max_w = 0;
-    do_resize();
+function hex_to_rgba(hexColor, alpha) {
+    var red, green, blue, color;
+    red = hexColor[1] + hexColor[2];
+    green = hexColor[3] + hexColor[4];
+    blue = hexColor[5] + hexColor[6];
+
+    color = 'rgba(' + parseInt('0x' + red) +', ';
+    color += parseInt('0x' + green)+', ';
+    color += parseInt('0x' + blue)+', ' + alpha;
+
+    return color;
+}
+function p_Point(x, y) {
+    return {x: x, y: y};
+}
+function p_distance(pt1, pt2) {
+    return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
 }
