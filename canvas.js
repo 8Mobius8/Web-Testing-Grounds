@@ -116,3 +116,52 @@ function draw_GraphPaper(color, units) {
 
     ctx.restore();
 }
+
+/*========= Code Adapted from Jim Mildrew =======*/
+function drawUIBox(x, y, width, height) {  
+  ctx.save();
+
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "black";
+  ctx.shadowColor = "black";
+  ctx.shadowOffsetX = 5;
+  ctx.shadowOffsetY = 5;
+  ctx.shadowBlur = 15;
+  ctx.strokeRect(x, y, width, height);
+  ctx.fillRect(x, y, width, height);
+  
+  ctx.restore();
+}
+
+
+// Messages --------------------------------------------------
+
+function showMessage(string) {
+
+  var box = {x: 10, y: 470, width: 180, height: 20};
+  
+  ctx.save();
+  
+  // draw the box exterior
+  if (!showMessage.boxDrawn) {
+    drawUIBox(box.x, box.y, box.width, box.height);
+    showMessage.boxDrawn = true; // prevent redraw of the box
+  }
+  
+  // draw the box contents
+  ctx.fillStyle = "white";
+  ctx.fillRect(box.x, box.y, box.width, box.height);
+  ctx.fillStyle = "black";
+  ctx.font = "14px Arial";
+  ctx.fillText(string, box.x + 7, box.y+ 15);
+  ctx.restore();
+}
+
+// test: showMessage
+//showMessage("Ready to draw?");
+
+
+function showCoordinates(x, y) {
+  var coordinateString = "mouse location: (" + x + ", " + y + ")";
+  showMessage(coordinateString);
+}
