@@ -3,13 +3,15 @@
 */
 var GRAPH_COLOR = "paleTurquoise",
     GRAPH_UNITS = 20,
-    ID_erase_button = "erase";
+    ID_erase_button = "erase",
+    MESSAGE_BOX = {x:0, y:0, w:215, h:20, margin: 10, font: "14px Helvetica"}; // Initalized for UI box
 var canvas, ctx;
 
 // Setup function for loading the page
 window.onload = function () {
     initalize();
     draw_GraphPaper();
+    showMessage("Welcome!");
     add_Listener("mousedown", do_mouseDown);
     add_Listener("mouseup", do_mouseUp);
     add_Listener("mousemove", do_mouseAt);
@@ -25,7 +27,10 @@ function do_mouseUp(event){
 }
 
 function do_mouseAt(event){
+    var x = event.clientX - canvas.offsetLeft,
+        y = event.clientY - canvas.offsetTop;
 
+    showCoordinates(x, y);
 }
 // End of Listeners
 
@@ -46,7 +51,10 @@ function initalize(){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         draw_GraphPaper();
     };
-    do_resize();
+    canvas.width = window.innerWidth - 25;
+    canvas.height = window.innerHeight - 15;
+    MESSAGE_BOX.x = MESSAGE_BOX.margin;
+    MESSAGE_BOX.y = canvas.height - (MESSAGE_BOX.h +MESSAGE_BOX.margin);
 }
 
 window.onresize = do_resize;
@@ -55,6 +63,9 @@ function do_resize() {
     canvas.width = window.innerWidth - 25;
     canvas.height = window.innerHeight - 15;
     ctx.putImageData(lastImg, 0, 0);
+    MESSAGE_BOX.x = MESSAGE_BOX.margin;
+    MESSAGE_BOX.y = canvas.height - (MESSAGE_BOX.h +MESSAGE_BOX.margin);
+    showMessage("RESIZED!");
 }
 
 function add_Listener(name, funcToAdd){
@@ -121,15 +132,15 @@ function draw_GraphPaper(color, units) {
 function drawUIBox(x, y, width, height) {  
   ctx.save();
 
-  ctx.fillStyle = "white";
-  ctx.strokeStyle = "black";
-  ctx.shadowColor = "black";
+  ctx.fillStyle = "black";
+  ctx.strokeStyle = "red";
+  ctx.shadowColor = "grey";
   ctx.shadowOffsetX = 5;
   ctx.shadowOffsetY = 5;
   ctx.shadowBlur = 15;
   ctx.strokeRect(x, y, width, height);
   ctx.fillRect(x, y, width, height);
-  
+
   ctx.restore();
 }
 
@@ -137,29 +148,25 @@ function drawUIBox(x, y, width, height) {
 // Messages --------------------------------------------------
 
 function showMessage(string) {
-
-  var box = {x: 10, y: 470, width: 180, height: 20};
   
   ctx.save();
   
   // draw the box exterior
   if (!showMessage.boxDrawn) {
-    drawUIBox(box.x, box.y, box.width, box.height);
+    drawUIBox(MESSAGE_BOX.x, MESSAGE_BOX.y, MESSAGE_BOX.w, MESSAGE_BOX.h);
     showMessage.boxDrawn = true; // prevent redraw of the box
   }
   
   // draw the box contents
-  ctx.fillStyle = "white";
-  ctx.fillRect(box.x, box.y, box.width, box.height);
   ctx.fillStyle = "black";
-  ctx.font = "14px Arial";
-  ctx.fillText(string, box.x + 7, box.y+ 15);
+  ctx.fillRect(MESSAGE_BOX.x, MESSAGE_BOX.y, MESSAGE_BOX.w, MESSAGE_BOX.h);
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "grey";
+  ctx.font = MESSAGE_BOX.font;
+  ctx.fillText(string, MESSAGE_BOX.x + 7, MESSAGE_BOX.y+ 15);
+
   ctx.restore();
 }
-
-// test: showMessage
-//showMessage("Ready to draw?");
-
 
 function showCoordinates(x, y) {
   var coordinateString = "mouse location: (" + x + ", " + y + ")";

@@ -1,6 +1,6 @@
 * {
 	color: #ffffff;
-	font-family: Consolas;
+	font-family: Helvetica;
 }
 canvas {
 	margin: 0 auto;
@@ -27,6 +27,10 @@ h1 {
 	width: 60%;
 	margin: 0 20%;
 	background-color: #000;
+}
+.title h1,
+.title {
+	font-family: Consolas;
 }
 .tool-bar {
 	position: fixed;
