@@ -1,48 +1,92 @@
 /*
-    Mark Odell : Canvas Demos
+    Mark Odell : Retain Mode
+    The purpose of this assignment was to create a canvas web app to save and retain shapes so that they
+    may transformed later. Transformations included rotatation and translation. 
 */
 /* Some CONSTANTS */
 var GRAPH_COLOR = "paleTurquoise",
     GRAPH_UNITS = 20,
-    ID_erase_button = "erase", ID_brush_type = "brush",
+    ID_erase_button = "erase", ID_brush_type = "brush", ID_color_picker = "color-picker", ID_mode_picker = "mode-picker",
     MESSAGE_BOX = {x:0, y:0, w:215, h:20, margin: 10, font: "14px Helvetica"}; // Initalized for UI box
 
 /* Global Variables */
-var canvas, ctx;
-var shapeToDraw;
+var canvas, ctx,
+    p_one, p_two,
+    shapeStack, prevImg, shapeDrawn,
+    isMouseDown, mode;
 
 // Setup function for loading the page
 window.onload = function () {
     initalize();
     draw_GraphPaper();
     showMessage("Welcome!");
-    add_Listener("mousedown", do_mouseDown);
-    add_Listener("mouseup", do_mouseUp);
-    add_Listener("mousemove", do_mouseAt);
+    shapeStack = [];
 };
 
 // Functional Listeners
-function do_mouseDown(event) {
-    
+function startRubberband() {
+    p_one = { x:event.clientX - canvas.offsetLeft,
+              y:event.clientY - canvas.offsetTop  };
+    prevImg = ctx.getImageData(0, 0, canvas.height, canvas.width);
+    isMouseDown = true;
 }
 
-function do_mouseUp(event){
-    
+function moveRubberband() {
+    p_two = { x:event.clientX - canvas.offsetLeft,
+              y:event.clientY - canvas.offsetTop  };
+
+    if(isMouseDown) {
+        var stroke = document.getElementById(ID_color_picker).value;
+        var fill = hex_to_rgba(stroke, 0.4);
+        var brush = document.getElementById(ID_brush_type).value;
+        // Restore image when first clicked (rubberbanding)
+        ctx.putImageData(prevImg, 0, 0);
+        // Draw shape from orginal point to currently location
+        draw_selectedShape(brush, p_one, p_two, stroke, fill);
+    }
 }
 
-function do_mouseAt(event){
-    var x = event.clientX - canvas.offsetLeft,
-        y = event.clientY - canvas.offsetTop;
-
-    showCoordinates(x, y);
+function endRubberband() {
+    shapeStack.push(shapeDrawn);
+    isMouseDown = false;
 }
+
+function mouseAt() {
+    showCoordinates(p_two.x, p_two.y);
+}
+
 // End of Listeners
+function drawMode() {
+    removeCanvasListeners();
+    addCanvasListener("mousedown", startRubberband);
+    addCanvasListener("mousemove", moveRubberband);
+    addCanvasListener("mouseup", endRubberband);
+    addCanvasListener("mousemove", mouseAt);
+    canvas.style.cursor = 'crosshair';
+}
 
 
+function draw_selectedShape(tool, pt1, pt2, stroke, fill){
+    ctx.save();
 
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
 
-
-
+    if(tool == 'line') {
+        shapeDrawn = p_Line(p_one, p_two);
+        draw_aLine(pt1, pt2);
+    } else if(tool == 'rect'){
+        shapeDrawn = p_Rect(p_one, p_one);
+        draw_aRect(pt1, pt2);
+    } else if (tool == 'tri') {
+        shapeDrawn = p_RightTriangle(p_one, p_two);
+        draw_aRightTriangle(pt1, pt2);
+    } else if (tool == 'circle') {
+        shapeDrawn = p_Circle(p_one, p_two);
+        draw_aCircle(pt1, pt2);
+    }
+    ctx.restore();
+}
 /*-------- END Functional Code ---------*/
 
 /*-- Common Functions for Canvas --*/
@@ -76,23 +120,15 @@ function do_resize() {
     showMessage("RESIZED!");
 }
 
-function add_Listener(name, funcToAdd){
-    canvas.addEventListener(name, funcToAdd);
-}
-
-function rm_Listeners() {
-
-}
-
 function hex_to_rgba(hexColor, alpha) {
     var red, green, blue, color;
     red = hexColor[1] + hexColor[2];
     green = hexColor[3] + hexColor[4];
     blue = hexColor[5] + hexColor[6];
 
-    color = 'rgba(' + parseInt(red) +', ';
-    color += parseInt(green)+', ';
-    color += parseInt(blue)+', ' + alpha;
+    color = 'rgba(' + parseInt('0x' + red) +', ';
+    color += parseInt('0x' + green)+', ';
+    color += parseInt('0x' + blue)+', ' + alpha;
 
     return color;
 }
@@ -101,8 +137,19 @@ function hex_to_rgba(hexColor, alpha) {
 function p_Point(x, y) {
     return {x: x, y: y};
 }
-
-function p_distance(pt1, pt2) {
+function p_Rect(p1, p2) {
+    return {x: p1.x, y: p1.y, w: p2.x - p1.x, h: p2.y - p1.y };
+}
+function p_Line(p1, p2) {
+    return {p_1: p1, p_2: p2};
+}
+function p_RightTrianglep_Line(p1, p2) {
+    return {p_1: p1, p_2: p2};
+}
+function p_Circle(p1, p2) {
+    return {x: p1.x, y: p1.y, r: distance(p1, p2)};
+}
+function distance(pt1, pt2) {
     return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
 }
 
@@ -167,7 +214,7 @@ function draw_aRightTriangle(pt1, pt2) {
 }
 
 function draw_aCircle(pt1, pt2) {
-    var r = p_distance(pt1, pt2);
+    var r = distance(pt1, pt2);
     ctx.beginPath();
     ctx.arc(pt1.x, pt1.y, r, 0, Math.PI*2);
     ctx.closePath();
@@ -177,6 +224,28 @@ function draw_aCircle(pt1, pt2) {
 
 
 /*========= Code Adapted from Jim Mildrew =======*/
+var activeListeners = [];
+
+function addCanvasListener(event, functionObj) {
+  canvas.addEventListener(event, functionObj);
+  activeListeners.push({event: event, func: functionObj});
+}
+
+function removeCanvasListeners() {
+  activeListeners.forEach(
+    function(listener) {
+      canvas.removeEventListener(listener.event, listener.func);
+    }
+  );
+  activeListeners = [];
+}
+
+var modeSelect = document.getElementById("mode-picker");
+
+function changeMode(event) { window[modeSelect.value](); }
+modeSelect.addEventListener("change", changeMode);
+changeMode();
+
 function drawUIBox(x, y, width, height) {  
   ctx.save();
 
