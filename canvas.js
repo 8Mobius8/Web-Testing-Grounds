@@ -1,11 +1,15 @@
 /*
     Mark Odell : Canvas Demos
 */
+/* Some CONSTANTS */
 var GRAPH_COLOR = "paleTurquoise",
     GRAPH_UNITS = 20,
-    ID_erase_button = "erase",
+    ID_erase_button = "erase", ID_brush_type = "brush",
     MESSAGE_BOX = {x:0, y:0, w:215, h:20, margin: 10, font: "14px Helvetica"}; // Initalized for UI box
+
+/* Global Variables */
 var canvas, ctx;
+var shapeToDraw;
 
 // Setup function for loading the page
 window.onload = function () {
@@ -19,11 +23,11 @@ window.onload = function () {
 
 // Functional Listeners
 function do_mouseDown(event) {
-
+    
 }
 
 function do_mouseUp(event){
-
+    
 }
 
 function do_mouseAt(event){
@@ -34,10 +38,14 @@ function do_mouseAt(event){
 }
 // End of Listeners
 
+
+
+
+
+
 /*-------- END Functional Code ---------*/
 
 /*-- Common Functions for Canvas --*/
-
 function initalize(){
     canvas = document.getElementById("canvas");
     if (canvas.getContext) {
@@ -89,6 +97,7 @@ function hex_to_rgba(hexColor, alpha) {
     return color;
 }
 
+/*-=-=-=-= Functions for Path creation =-=-=-=-*/
 function p_Point(x, y) {
     return {x: x, y: y};
 }
@@ -96,6 +105,8 @@ function p_Point(x, y) {
 function p_distance(pt1, pt2) {
     return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
 }
+
+/*-=-= Simple helper functions to draw shapes =-=-*/
 
 /*
  *  Draws a engineering like graph paper on the canvas
@@ -127,6 +138,43 @@ function draw_GraphPaper(color, units) {
 
     ctx.restore();
 }
+
+function draw_aRect(pt1, pt2) {
+    aRect = {x: pt1.x,
+             y: pt1.y,
+             w: pt2.x - pt1.x,
+             h: pt2.y - pt1.y };
+    ctx.strokeRect(aRect.x, aRect.y, aRect.w, aRect.h);
+    ctx.fillRect(aRect.x, aRect.y, aRect.w, aRect.h);
+}
+
+function draw_aLine(pt1, pt2) {
+    ctx.beginPath();
+    ctx.moveTo(pt1.x, pt1.y);
+    ctx.lineTo(pt2.x, pt2.y);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+function draw_aRightTriangle(pt1, pt2) {
+    ctx.beginPath();
+    ctx.moveTo(pt1.x, pt1.y);
+    ctx.lineTo(pt1.x, pt2.y);
+    ctx.lineTo(pt2.x, pt2.y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+}
+
+function draw_aCircle(pt1, pt2) {
+    var r = p_distance(pt1, pt2);
+    ctx.beginPath();
+    ctx.arc(pt1.x, pt1.y, r, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+}
+
 
 /*========= Code Adapted from Jim Mildrew =======*/
 function drawUIBox(x, y, width, height) {  
