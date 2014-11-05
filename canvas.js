@@ -6,36 +6,61 @@
 /* Some CONSTANTS */
 var GRAPH_COLOR = "paleTurquoise",
     GRAPH_UNITS = 20,
-    ID_erase_button = "erase", ID_brush_type = "brush", ID_color_picker = "color-picker", ID_mode_picker = "mode-picker",
+    ID_erase_button = "erase", ID_brush_type = "brush", ID_color_picker = "color-picker", ID_mode_picker = "modepicker",
     MESSAGE_BOX = {x:0, y:0, w:215, h:20, margin: 10, font: "14px Helvetica"}; // Initalized for UI box
 
 /* Global Variables */
 var canvas, ctx,
-    p_one, p_two,
+    p_one, p_two, offset, a_offset,
     shapeStack, prevImg, shapeDrawn,
-    isMouseDown, mode;
+    rubberBanding, modeSelect,
+    activeListeners = [];
 
 // Setup function for loading the page
 window.onload = function () {
-    initalize();
-    draw_GraphPaper();
-    showMessage("Welcome!");
-    shapeStack = [];
+  initalize();
+  draw_GraphPaper();
+  showMessage("Welcome!");
+  shapeStack = [];
+
+  modeSelect = document.getElementById(ID_mode_picker);
+  function changeMode(event) { window[modeSelect.value]();}
+  modeSelect.addEventListener("change", changeMode);
+  changeMode();
+  canvas.addEventListener("mousemove", mouseAt);
 };
 
-// Functional Listeners
+
+ //================================\\
+//-------Functional Listeners-------\\
+
+function mouseAt(event) {
+    var x = event.clientX - canvas.offsetLeft,
+      y = event.clientY - canvas.offsetTop;
+    showCoordinates(x, y);
+}
+
+function drawMode() {
+  removeCanvasListeners();
+  addCanvasListener("mousedown", startRubberband);
+  addCanvasListener("mousemove", moveRubberband);
+  addCanvasListener("mouseup", endRubberband);
+  addCanvasListener("mouseAt", mouseAt);
+  canvas.style.cursor = 'crosshair';
+}
+// For drawMode()
 function startRubberband() {
     p_one = { x:event.clientX - canvas.offsetLeft,
               y:event.clientY - canvas.offsetTop  };
-    prevImg = ctx.getImageData(0, 0, canvas.height, canvas.width);
-    isMouseDown = true;
+    prevImg = ctx.getImageData(0, 0, canvas.height*2, canvas.width*2);
+    rubberBanding = true;
 }
-
+// For drawMode()
 function moveRubberband() {
     p_two = { x:event.clientX - canvas.offsetLeft,
               y:event.clientY - canvas.offsetTop  };
 
-    if(isMouseDown) {
+    if(rubberBanding) {
         var stroke = document.getElementById(ID_color_picker).value;
         var fill = hex_to_rgba(stroke, 0.4);
         var brush = document.getElementById(ID_brush_type).value;
@@ -45,26 +70,159 @@ function moveRubberband() {
         draw_selectedShape(brush, p_one, p_two, stroke, fill);
     }
 }
-
+// For drawMode()
 function endRubberband() {
     shapeStack.push(shapeDrawn);
-    isMouseDown = false;
+    rubberBanding = p_one = p_two = undefined;
 }
 
-function mouseAt() {
-    showCoordinates(p_two.x, p_two.y);
+function hitMode() {
+  removeCanvasListeners();
+  addCanvasListener("click", doHitTest);
+  addCanvasListener("mousemove", mouseAt);
+  canvas.style.cursor = 'default';
+}
+function doHitTest(event) {
+  var x = event.clientX - canvas.offsetLeft,
+      y = event.clientY - canvas.offsetTop;
+  var hit = shapeStack.filter(function(shape){
+    shape.path();
+    return ctx.isPointInPath(x, y);
+  });
+
+  hit.forEach(function(shape){
+    alert("Shape at (" +shape.x+", "+shape.y+")");
+  });
 }
 
-// End of Listeners
-function drawMode() {
-    removeCanvasListeners();
-    addCanvasListener("mousedown", startRubberband);
-    addCanvasListener("mousemove", moveRubberband);
-    addCanvasListener("mouseup", endRubberband);
-    addCanvasListener("mousemove", mouseAt);
-    canvas.style.cursor = 'crosshair';
+function deleteMode() {
+  removeCanvasListeners();
+  addCanvasListener("click", doDeleteHit);
+  addCanvasListener("mousemove", mouseAt);
+  canvas.style.cursor = 'default';
+}
+function doDeleteHit() {
+  var x = event.clientX - canvas.offsetLeft,
+      y = event.clientY - canvas.offsetTop;
+  shapeStack.reverse();
+  shapeStack.some(function(shape, i, stack){
+      shape.path();
+      if(ctx.isPointInPath(x, y)){
+        stack.splice(i, 1);
+        return true;
+      }
+  });
+  shapeStack.reverse();
+
+  clearRedrawShapes();
+  showMessage("Deleted Shape!");
 }
 
+function moveMode() {
+  removeCanvasListeners();
+  addCanvasListener("mousedown", doMoveHit);
+  addCanvasListener("mousemove", doMoveDrag);
+  addCanvasListener("mouseup", doMoveDone);
+  addCanvasListener("mousemove", mouseAt);
+  canvas.style.cursor = 'move';
+}
+// For modeMode()
+function doMoveHit() {
+  p_one = { x: event.clientX - canvas.offsetLeft,
+            y: event.clientY - canvas.offsetTop  };
+             
+  rubberBanding = true;
+}
+// For modeMode()
+function doMoveDrag() {
+  if(rubberBanding) {
+    p_two = { x: event.clientX - canvas.offsetLeft,
+              y: event.clientY - canvas.offsetTop  };
+    offset = Point(p_two.x - p_one.x, p_two.y - p_one.y);
+    clearShapes();
+    shapeStack.forEach(function(shape){
+      shape.path();
+      if(ctx.isPointInPath(p_one.x, p_one.y)){
+        ctx.save();
+        ctx.translate(offset.x, offset.y);
+        shape.draw();
+        ctx.restore();
+      } else {
+        shape.draw();
+      }
+    });
+  }
+}
+// For modeMode()
+function doMoveDone() {
+  shapeStack.some(function(shape){
+    shape.path();
+    if(ctx.isPointInPath(p_one.x, p_one.y)){
+      shape.x += offset.x;
+      shape.y += offset.y;
+      shape.origin.x += offset.x;
+      shape.origin.y += offset.y;
+    }
+  });
+  rubberBanding = p_one = p_two = undefined;
+}
+
+function rotateMode() {
+  removeCanvasListeners();
+  addCanvasListener("mousedown", doRotateHit);
+  addCanvasListener("mousemove", doRotateDrag);
+  addCanvasListener("mouseup", doRotateDone);
+  addCanvasListener("mousemove", mouseAt);
+  canvas.style.cursor = 'alias';
+}
+// For rotateMode()
+function doRotateHit() {
+  p_one = { x: event.clientX - canvas.offsetLeft,
+            y: event.clientY - canvas.offsetTop  };
+  rubberBanding = true;
+}
+// For rotateMode()
+function doRotateDrag() {
+  if(rubberBanding){
+    p_two = { x: event.clientX - canvas.offsetLeft,
+              y: event.clientY - canvas.offsetTop  };
+    
+    clearShapes();
+    shapeStack.forEach(function(shape){
+      shape.path();
+      if(ctx.isPointInPath(p_one.x, p_one.y)){
+        ctx.save();
+
+        offset = Point(shape.x, shape.y);
+        a_offset = Math.atan((p_two.x-shape.origin.x)/(p_two.y-shape.origin.y));
+        ctx.translate(shape.origin.x, shape.origin.y);
+        shape.x = 0 - shape.origin.x;
+        shape.y = 0 - shape.origin.y;
+        ctx.rotate(a_offset);
+        shape.draw();
+        shape.x = offset.x;
+        shape.y = offset.y;
+
+        ctx.restore();
+      } else {
+        shape.draw();
+      }
+    });
+  }
+}
+// For rotateMode()
+function doRotateDone() {
+  shapeStack.some(function(shape){
+    shape.path();
+    if(ctx.isPointInPath(p_one.x, p_one.y)){
+      shape.angle += a_offset;
+    }
+  });
+  rubberBanding = p_one = p_two = undefined;
+}
+
+//-------   END Listeners    -------\\
+ //================================\\
 
 function draw_selectedShape(tool, pt1, pt2, stroke, fill){
     ctx.save();
@@ -73,20 +231,33 @@ function draw_selectedShape(tool, pt1, pt2, stroke, fill){
     ctx.strokeStyle = stroke;
 
     if(tool == 'line') {
-        shapeDrawn = p_Line(p_one, p_two);
-        draw_aLine(pt1, pt2);
+        shapeDrawn = new Line(p_one, p_two, fill, stroke);
     } else if(tool == 'rect'){
-        shapeDrawn = p_Rect(p_one, p_one);
-        draw_aRect(pt1, pt2);
+        shapeDrawn = new Rect(p_one, p_two, fill, stroke);
     } else if (tool == 'tri') {
-        shapeDrawn = p_RightTriangle(p_one, p_two);
-        draw_aRightTriangle(pt1, pt2);
+        shapeDrawn = new RightTriangle(p_one, p_two, fill, stroke);
     } else if (tool == 'circle') {
-        shapeDrawn = p_Circle(p_one, p_two);
-        draw_aCircle(pt1, pt2);
+        shapeDrawn = new Circle(p_one, p_two, fill, stroke);
     }
+    shapeDrawn.draw();
+
     ctx.restore();
 }
+function clearShapes() {
+  showMessage.boxDrawn = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  draw_GraphPaper();
+}
+
+function clearRedrawShapes() {
+  showMessage.boxDrawn = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  draw_GraphPaper();
+  shapeStack.forEach(function(shape){
+    shape.draw();
+  });
+}
+
 /*-------- END Functional Code ---------*/
 
 /*-- Common Functions for Canvas --*/
@@ -134,25 +305,119 @@ function hex_to_rgba(hexColor, alpha) {
 }
 
 /*-=-=-=-= Functions for Path creation =-=-=-=-*/
-function p_Point(x, y) {
+function Point(x, y) {
     return {x: x, y: y};
 }
-function p_Rect(p1, p2) {
-    return {x: p1.x, y: p1.y, w: p2.x - p1.x, h: p2.y - p1.y };
+function drawShape() {
+  ctx.save();
+  ctx.fillStyle = this.fill;
+  ctx.strokeStyle = this.stroke;
+  this.path();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
 }
-function p_Line(p1, p2) {
-    return {p_1: p1, p_2: p2};
+function Rect(p1, p2, fill, stroke) {
+  this.fill = fill;
+  this.stroke = stroke;
+  this.x = p1.x;
+  this.y = p1.y;
+  this.w = p2.x - p1.x;
+  this.h = p2.y - p1.y;
+  this.origin = Point((this.x+this.w)/2, (this.y+this.h)/2);
+  this.angle = 0;
 }
-function p_RightTrianglep_Line(p1, p2) {
-    return {p_1: p1, p_2: p2};
+Rect.prototype.path = function() {
+  ctx.beginPath();
+  if(this.angle != 0) {
+    ctx.rotate(this.angle);
+  }
+  ctx.rect(this.x, this.y, this.w, this.h);
+  if(this.angle != 0) {
+    ctx.rotate(-this.angle);
+  }
 }
-function p_Circle(p1, p2) {
-    return {x: p1.x, y: p1.y, r: distance(p1, p2)};
+Rect.prototype.draw = drawShape;
+
+function Line(p1, p2, fill, stroke) {
+  this.fill = fill;
+  this.stroke = stroke;
+  this.x = p1.x;
+  this.y = p1.y;
+  this.pt1 = p1;
+  this.pt2 = p2;
+  this.origin = Point((this.x+this.w)/2, (this.y+this.h)/2);
+  this.angle = 0;
 }
+Line.prototype.path = function() {
+  ctx.beginPath();
+  if(this.angle != 0) {
+    ctx.rotate(this.angle);
+  }
+  ctx.moveTo(this.pt1.x, this.pt1.y);
+  ctx.lineTo(this.pt2.x, this.pt2.y);
+  if(this.angle != 0) {
+    ctx.rotate(-this.angle);
+  }
+}
+Line.prototype.draw = function() {
+  ctx.save();
+  this.path();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function RightTriangle(p1, p2, fill, stroke) {
+  this.fill = fill;
+  this.stroke = stroke;
+  this.x = p1.x;
+  this.y = p1.y;
+  this.w = p2.x - p1.x;
+  this.h = p2.y - p1.y;
+  this.origin = Point(2/3*(this.w-this.x)+this.x, 2/3*(this.h-this.y)+this.y);
+  this.angle = 0;
+}
+RightTriangle.prototype.path = function() {
+  ctx.beginPath();
+  if(this.angle != 0){
+    ctx.rotate(this.angle);
+  }
+  ctx.moveTo(this.x, this.y);
+  ctx.lineTo(this.x, this.y+this.h);
+  ctx.lineTo(this.x+this.w, this.y+this.h);
+  if(this.angle != 0) {
+    ctx.rotate(-this.angle);
+  }
+  ctx.closePath();
+}
+RightTriangle.prototype.draw = drawShape;
+
+function Circle(p1, p2, fill, stroke) {
+  this.fill = fill;
+  this.stroke = stroke;
+  this.x = p1.x;
+  this.y = p1.y; 
+  this.origin = Point(this.x, this.y);
+  this.r = distance(p1, p2);
+  this.angle = 0;
+
+}
+Circle.prototype.path = function() {
+  ctx.beginPath();
+  if(this.angle != 0){
+    ctx.rotate(this.angle);
+  }
+  ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+  if(this.angle != 0) {
+    ctx.rotate(-this.angle);
+  }
+  ctx.closePath();
+}
+Circle.prototype.draw = drawShape;
+
 function distance(pt1, pt2) {
     return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
 }
-
 /*-=-= Simple helper functions to draw shapes =-=-*/
 
 /*
@@ -186,45 +451,11 @@ function draw_GraphPaper(color, units) {
     ctx.restore();
 }
 
-function draw_aRect(pt1, pt2) {
-    aRect = {x: pt1.x,
-             y: pt1.y,
-             w: pt2.x - pt1.x,
-             h: pt2.y - pt1.y };
-    ctx.strokeRect(aRect.x, aRect.y, aRect.w, aRect.h);
-    ctx.fillRect(aRect.x, aRect.y, aRect.w, aRect.h);
+function redrawCanvas() {
+  initalize();
 }
-
-function draw_aLine(pt1, pt2) {
-    ctx.beginPath();
-    ctx.moveTo(pt1.x, pt1.y);
-    ctx.lineTo(pt2.x, pt2.y);
-    ctx.closePath();
-    ctx.stroke();
-}
-
-function draw_aRightTriangle(pt1, pt2) {
-    ctx.beginPath();
-    ctx.moveTo(pt1.x, pt1.y);
-    ctx.lineTo(pt1.x, pt2.y);
-    ctx.lineTo(pt2.x, pt2.y);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fill();
-}
-
-function draw_aCircle(pt1, pt2) {
-    var r = distance(pt1, pt2);
-    ctx.beginPath();
-    ctx.arc(pt1.x, pt1.y, r, 0, Math.PI*2);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fill();
-}
-
 
 /*========= Code Adapted from Jim Mildrew =======*/
-var activeListeners = [];
 
 function addCanvasListener(event, functionObj) {
   canvas.addEventListener(event, functionObj);
@@ -239,12 +470,6 @@ function removeCanvasListeners() {
   );
   activeListeners = [];
 }
-
-var modeSelect = document.getElementById("mode-picker");
-
-function changeMode(event) { window[modeSelect.value](); }
-modeSelect.addEventListener("change", changeMode);
-changeMode();
 
 function drawUIBox(x, y, width, height) {  
   ctx.save();
