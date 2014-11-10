@@ -160,8 +160,8 @@ function doMoveDone() {
     if(ctx.isPointInPath(p_one.x, p_one.y)){
       shape.x += offset.x;
       shape.y += offset.y;
-      shape.origin.x += offset.x;
-      shape.origin.y += offset.y;
+      shape.center.x += offset.x;
+      shape.center.y += offset.y;
     }
   });
   rubberBanding = p_one = p_two = undefined;
@@ -179,6 +179,7 @@ function rotateMode() {
 function doRotateHit() {
   p_one = { x: event.clientX - canvas.offsetLeft,
             y: event.clientY - canvas.offsetTop  };
+  a_offset = Math.atan((p_one.y-shape.center.y)/(p_one.x-shape.center.x)) - shape.angle; 
   rubberBanding = true;
 }
 // For rotateMode()
@@ -194,14 +195,8 @@ function doRotateDrag() {
         ctx.save();
 
         offset = Point(shape.x, shape.y);
-        a_offset = Math.atan((p_two.x-shape.origin.x)/(p_two.y-shape.origin.y));
-        ctx.translate(shape.origin.x, shape.origin.y);
-        shape.x = 0 - shape.origin.x;
-        shape.y = 0 - shape.origin.y;
-        ctx.rotate(a_offset);
+        shape.angle = Math.atan((p_two.y-shape.center.y)/(p_two.x-shape.center.x)) - a_offset;
         shape.draw();
-        shape.x = offset.x;
-        shape.y = offset.y;
 
         ctx.restore();
       } else {
@@ -218,7 +213,7 @@ function doRotateDone() {
       shape.angle += a_offset;
     }
   });
-  rubberBanding = p_one = p_two = undefined;
+  rubberBanding = p_one = p_two = offset = undefined;
 }
 
 //-------   END Listeners    -------\\
@@ -317,6 +312,7 @@ function drawShape() {
   ctx.stroke();
   ctx.restore();
 }
+
 function Rect(p1, p2, fill, stroke) {
   this.fill = fill;
   this.stroke = stroke;
@@ -324,17 +320,20 @@ function Rect(p1, p2, fill, stroke) {
   this.y = p1.y;
   this.w = p2.x - p1.x;
   this.h = p2.y - p1.y;
-  this.origin = Point((this.x+this.w)/2, (this.y+this.h)/2);
+  this.center = Point((this.x*2+this.w)/2, (this.y*2+this.h)/2);
   this.angle = 0;
 }
 Rect.prototype.path = function() {
   ctx.beginPath();
   if(this.angle != 0) {
+    ctx.save();
+    ctx.translate(this.center.x, this.center.y);
     ctx.rotate(this.angle);
-  }
-  ctx.rect(this.x, this.y, this.w, this.h);
-  if(this.angle != 0) {
-    ctx.rotate(-this.angle);
+    ctx.translate(-this.center.x, -this.center.y);
+    ctx.rect(this.x, this.y, this.w, this.h);
+    ctx.restore();
+  } else {
+    ctx.rect(this.x, this.y, this.w, this.h);
   }
 }
 Rect.prototype.draw = drawShape;
@@ -346,7 +345,7 @@ function Line(p1, p2, fill, stroke) {
   this.y = p1.y;
   this.pt1 = p1;
   this.pt2 = p2;
-  this.origin = Point((this.x+this.w)/2, (this.y+this.h)/2);
+  this.center = Point((this.x+this.w)/2, (this.y+this.h)/2);
   this.angle = 0;
 }
 Line.prototype.path = function() {
@@ -374,7 +373,7 @@ function RightTriangle(p1, p2, fill, stroke) {
   this.y = p1.y;
   this.w = p2.x - p1.x;
   this.h = p2.y - p1.y;
-  this.origin = Point(2/3*(this.w-this.x)+this.x, 2/3*(this.h-this.y)+this.y);
+  this.center = Point(2/3*(this.w-this.x)+this.x, 2/3*(this.h-this.y)+this.y);
   this.angle = 0;
 }
 RightTriangle.prototype.path = function() {
@@ -397,7 +396,7 @@ function Circle(p1, p2, fill, stroke) {
   this.stroke = stroke;
   this.x = p1.x;
   this.y = p1.y; 
-  this.origin = Point(this.x, this.y);
+  this.center = Point(this.x, this.y);
   this.r = distance(p1, p2);
   this.angle = 0;
 
