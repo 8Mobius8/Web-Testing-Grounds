@@ -22,6 +22,13 @@ var fragmentShaderCode =
 
 /*-------- END Functional Code ---------*/
 
+function getPtMouseEvent(event) {
+    return {
+        x: (event.clientX - canvas.offsetLeft - canvas.width/2) / (canvas.width/2),
+        y: (event.clienty - canvas.offsetTop - canvas.height/2) / (canvas.height/2)
+    };
+}
+
 /*--   Init functions for Canvas   --*/
 
 function initalize(){
