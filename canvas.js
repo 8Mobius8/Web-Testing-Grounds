@@ -1,118 +1,125 @@
 /*
-    Mark Odell : Canvas Demos
+    Mark Odell : Canvas Demos : WebGL
 */
-var GRAPH_COLOR = "paleTurquoise",
-    GRAPH_UNITS = 20,
-    ID_erase_button = "erase";
-var canvas, ctx;
-
+var canvas, gl,
+    
 // Setup function for loading the page
 window.onload = function () {
     initalize();
-    draw_GraphPaper();
-    add_Listener("mousedown", do_mouseDown);
-    add_Listener("mouseup", do_mouseUp);
-    add_Listener("mousemove", do_mouseAt);
 };
 
-// Functional Listeners
-function do_mouseDown(event) {
+/*--------   Functional Code   ---------*/
+var vertexShaderCode = 
+    'void main() { \n' +
+    '  gl_Position = vec4(0.0, 0.0, 0.0, 1.0); \n' + 
+    '  gl_PointSize = 10.0; \n' +
+    '} \n';
 
-}
-
-function do_mouseUp(event){
-
-}
-
-function do_mouseAt(event){
-
-}
-// End of Listeners
+var fragmentShaderCode = 
+    'void main() { \n' +
+    '  gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0); \n' +
+    '} \n';
 
 /*-------- END Functional Code ---------*/
 
-/*-- Common Functions for Canvas --*/
+/*--   Init functions for Canvas   --*/
 
 function initalize(){
     canvas = document.getElementById("canvas");
     if (canvas.getContext) {
-        ctx = canvas.getContext('2d');
+        gl = canvas.getContext('webgl');
         canvas.style.backgroundColor = 'white';
     } else {
         alert('Canvas could not be found by ID:' + canvas);
         return;
     }
-    document.getElementById(ID_erase_button).onclick = function(){
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        draw_GraphPaper();
-    };
-    do_resize();
-}
+    
+    // specify a clear value for color buffer
+    // (note that GL colors are 0.0 to 1.0, not 0 to 255)
+    gl.clearColor(0.0, 0.0, 0.0, 1.0); // black
 
-window.onresize = do_resize;
-function do_resize() {
-    lastImg = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    canvas.width = window.innerWidth - 25;
-    canvas.height = window.innerHeight - 15;
-    ctx.putImageData(lastImg, 0, 0);
-}
+    // clear the color buffer
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-function add_Listener(name, funcToAdd){
-    canvas.addEventListener(name, funcToAdd);
-}
-
-function rm_Listeners() {
-
-}
-
-function hex_to_rgba(hexColor, alpha) {
-    var red, green, blue, color;
-    red = hexColor[1] + hexColor[2];
-    green = hexColor[3] + hexColor[4];
-    blue = hexColor[5] + hexColor[6];
-
-    color = 'rgba(' + parseInt(red) +', ';
-    color += parseInt(green)+', ';
-    color += parseInt(blue)+', ' + alpha;
-
-    return color;
-}
-
-function p_Point(x, y) {
-    return {x: x, y: y};
-}
-
-function p_distance(pt1, pt2) {
-    return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
-}
-
-/*
- *  Draws a engineering like graph paper on the canvas
- *  with the given color and unit parameters. This function
- *  defaults to the globally defined variables for color and units.
- *  Thanks Prof Mildrew for the algorithm
- *  @param color    A color string
- *  @param units    Number of pixels to determine the square size
- */
-function draw_GraphPaper(color, units) {
-    ctx.save();
-
-    ctx.strokeStyle = color || GRAPH_COLOR;
-    ctx.beginPath();
-    var i = 0.5;
-    while(i <= canvas.width || i <= canvas.height) {
-        if(i <= canvas.width){
-            ctx.moveTo(i, 0.5);
-            ctx.lineTo(i, canvas.height);
-        }
-        if(i <= canvas.height){
-            ctx.moveTo(0.5, i);
-            ctx.lineTo(canvas.width, i);
-        }
-        i += units || GRAPH_UNITS;
+    // initialize the shaders
+    if (!initShaders(gl, vertexShaderCode, fragmentShaderCode)) {
+        alert('Cannot initialize the shaders.');
+        return;
     }
-    ctx.stroke();
-    ctx.closePath();
 
-    ctx.restore();
+    gl.drawArrays(gl.POINTS, 0, 1);
+}
+/*-- END Init functions for Canvas --*/
+
+// Init shaders -----------------------------------------------
+// curtosity of Jim Mildrew
+
+function initShaders(gl, vshader, fshader) {
+  
+  var program = createProgram(gl, vshader, fshader);
+  if (!program) {
+    alert('Failed to create program');
+    return false;
+  }
+
+  gl.useProgram(program);
+  gl.program = program;
+  return true;
+}
+
+
+function createProgram(gl, vshader, fshader) {
+  
+  // Create and compile the shader objects
+  var vertexShader = createShader(gl, gl.VERTEX_SHADER, vshader);
+  var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fshader);
+  if (!vertexShader || !fragmentShader) return null;
+
+  // Create a program object
+  var program = gl.createProgram();
+  if (!program) return null;
+
+  // Attach the shader objects
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+
+  // Link the program object
+  gl.linkProgram(program);
+
+  // Check the result of linking
+  var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+  if (!linked) {
+    alert('Failed to link program: ' + gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    gl.deleteShader(fragmentShader);
+    gl.deleteShader(vertexShader);
+    return null;
+  }
+  
+  return program;
+}
+
+
+function createShader(gl, type, source) {
+  
+  // Create a shader object
+  var shader = gl.createShader(type);
+  if (shader == null) {
+    alert('Unable to create shader');
+    return null;
+  }
+
+  // Set the shader source and compile it
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+
+  // Check the result of compilation
+  var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  if (!compiled) {
+    alert('Failed to compile shader: ' + gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+
+  return shader;
 }
