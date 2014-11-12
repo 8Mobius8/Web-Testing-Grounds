@@ -6,22 +6,25 @@ var canvas, gl;
 // Setup function for loading the page
 window.onload = function () {
     init_canvas();
+    init_Listners();
     init_ShaderAttrs();
 };
 
 /*--------   Functional Code   ---------*/
-var leafCollection = [], // Our array of leaves
+var leafCollection = []; // Our array of leaves
 
-var shaderAttrs = [
-  // Vertex Attrs
-  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+// Shader vars
+var a_Position, a_PointSize, // Vertex
+    u_FragColor;             // Fragment
+
+function init_ShaderAttrs() {
+  a_Position = gl.getAttribLocation(gl.program, 'a_Position');
   if (a_Position < 0) { alert('Cannot get a_Position'); return; }
-  var a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
+  a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
   if (a_PointSize < 0) { alert('Cannot get a_PointSize'); return; }
-  // Fragment Attrs
-  var u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
+  u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
   if (!u_FragColor) { alert('Cannot get u_FragColor'); return; }
-];
+}
 
 var vertexShaderCode = 
     'attribute vec4 a_Position; \n' +
@@ -38,16 +41,20 @@ var fragmentShaderCode =
     '  gl_FragColor = u_FragColor; \n' +
     '} \n';
 
+
+function init_Listners() {
+  canvas.
+} 
 // vvv Listeners vvv \\
-function do_MouseDown() {
+function do_MouseDown(event) {
 
 }
 
-function do_MouseMove() {
+function do_MouseMove(event) {
 
 }
 
-function do_MouseUp() {
+function do_MouseUp(event) {
 
 }
 // ^^^ Listeners ^^^ \\
