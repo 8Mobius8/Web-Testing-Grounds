@@ -3,8 +3,9 @@
 	font-family: Consolas;
 }
 canvas {
-	margin: 0 auto;
+	margin: 10px auto;
     display: block;
+    box-shadow: 0px 0px 20px red;
 }
 body {
 	background-color: #000000;
@@ -27,6 +28,7 @@ h1 {
 	width: 60%;
 	margin: 0 20%;
 	background-color: #000;
+	border: 2px solid rgba(255, 0, 0, 0.4);
 }
 .tool-bar {
 	position: fixed;

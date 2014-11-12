@@ -1,24 +1,56 @@
 /*
     Mark Odell : Canvas Demos : WebGL
 */
-var canvas, gl,
+var canvas, gl;
     
 // Setup function for loading the page
 window.onload = function () {
-    initalize();
+    init_canvas();
+    init_ShaderAttrs();
 };
 
 /*--------   Functional Code   ---------*/
+var leafCollection = [], // Our array of leaves
+
+var shaderAttrs = [
+  // Vertex Attrs
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  if (a_Position < 0) { alert('Cannot get a_Position'); return; }
+  var a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
+  if (a_PointSize < 0) { alert('Cannot get a_PointSize'); return; }
+  // Fragment Attrs
+  var u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
+  if (!u_FragColor) { alert('Cannot get u_FragColor'); return; }
+];
+
 var vertexShaderCode = 
+    'attribute vec4 a_Position; \n' +
+    'attribute float a_PointSize; \n' +
     'void main() { \n' +
-    '  gl_Position = vec4(0.0, 0.0, 0.0, 1.0); \n' + 
-    '  gl_PointSize = 10.0; \n' +
+    '  gl_Position = a_Position; \n' + 
+    '  gl_PointSize = a_PointSize; \n' +
     '} \n';
 
 var fragmentShaderCode = 
+    'precision mediump float; \n' +
+    'uniform vec4 u_FragColor; \n' +
     'void main() { \n' +
-    '  gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0); \n' +
+    '  gl_FragColor = u_FragColor; \n' +
     '} \n';
+
+// vvv Listeners vvv \\
+function do_MouseDown() {
+
+}
+
+function do_MouseMove() {
+
+}
+
+function do_MouseUp() {
+
+}
+// ^^^ Listeners ^^^ \\
 
 /*-------- END Functional Code ---------*/
 
@@ -31,8 +63,10 @@ function getPtMouseEvent(event) {
 
 /*--   Init functions for Canvas   --*/
 
-function initalize(){
+function init_canvas(){
     canvas = document.getElementById("canvas");
+    canvas.width = window.innerWidth - 20;
+    canvas.height = window.innerHeight - 20;
     if (canvas.getContext) {
         gl = canvas.getContext('webgl');
         canvas.style.backgroundColor = 'white';
@@ -43,7 +77,7 @@ function initalize(){
     
     // specify a clear value for color buffer
     // (note that GL colors are 0.0 to 1.0, not 0 to 255)
-    gl.clearColor(0.0, 0.0, 0.0, 1.0); // black
+    gl.clearColor(0.0, 0.0, 0.0, 0.5); // black
 
     // clear the color buffer
     gl.clear(gl.COLOR_BUFFER_BIT);
