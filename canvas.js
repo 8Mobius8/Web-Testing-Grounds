@@ -2,19 +2,20 @@
     Mark Odell : Canvas Demos : WebGL
 */
 var canvas, gl,
-    POINT_SIZE = 10;
+    POINT_SIZE = 10,
+    density = 10; // Default Density for a quasi-path 
+                  // defined when clicked-and-held mouse click.
     
 // Setup function for loading the page
 window.onload = function () {
     init_canvas();
     init_Listners();
-    init_ShaderAttrs();
 };
 
 /*--------   Functional Code   ---------*/
-var leafCollection = []; // Our array of leaves
-var densityCounter = 10; // Default Density for a quasi-path 
-                         // defined when clicked-and-held mouse click.
+var leafCollection = [], // Our array of leaves
+    mouseDown,
+    eventCounter = 0; 
 
 // Shader vars
 var a_Position, a_PointSize, // Vertex
@@ -22,11 +23,13 @@ var a_Position, a_PointSize, // Vertex
 
 function init_ShaderAttrs() {
   a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-  if (a_Position < 0) { alert('Cannot get a_Position'); return; }
+  if (a_Position < 0) { console.log('Cannot get a_Position\n')};
   a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
-  if (a_PointSize < 0) { alert('Cannot get a_PointSize'); return; }
+  if (a_PointSize < 0) { console.log('Cannot get a_PointSize\n')};
   u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-  if (!u_FragColor) { alert('Cannot get u_FragColor'); return; }
+  if (!u_FragColor) { console.log('Cannot get u_FragColor\n')}
+
+  gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
 }
 
 var vertexShaderCode = 
@@ -45,12 +48,13 @@ var fragmentShaderCode =
     '} \n';
 
 function draw_Frame(aCollection) {
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  init_ShaderAttrs();
   leafCollection.forEach(function(anItem){
     gl.vertexAttrib3f(a_Position,
                       anItem.x, anItem.y, 0.0);
     gl.uniform4f(u_FragColor,
-                 anItem.color.r, anItem.color.g, anItem.color.b);
-    gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
+                 anItem.color.r, anItem.color.g, anItem.color.b, 1.0);
     gl.drawArrays(gl.POINTS, 0, 1);
   });
 }
@@ -62,15 +66,30 @@ function init_Listners() {
 } 
 // vvv Listeners vvv \\
 function do_MouseDown(event) {
-  
+  mouseDown = true;
+  var downPt = getPtMouseEvent(event);
+  leafCollection.push(
+    createLeaf(downPt.x, downPt.y, 1.0, 0.0, 0.0));
+  draw_Frame(leafCollection);
+  eventCounter++;
 }
 
 function do_MouseMove(event) {
+  if(mouseDown) {
+    if(eventCounter%density == 0){
 
+      var movePt = getPtMouseEvent(event);
+      leafCollection.push(
+        createLeaf(movePt.x, movePt.y, 1.0, 0.0, 0.0));
+      draw_Frame(leafCollection);
+    }
+
+    eventCounter++;
+  }
 }
 
 function do_MouseUp(event) {
-
+  mouseDown = false;
 }
 // ^^^ Listeners ^^^ \\
 
@@ -93,17 +112,15 @@ function init_canvas(){
     canvas = document.getElementById("canvas");
     canvas.width = window.innerWidth - 20;
     canvas.height = window.innerHeight - 20;
-    if (canvas.getContext) {
         gl = canvas.getContext('webgl');
-        canvas.style.backgroundColor = 'white';
-    } else {
+    if(!gl) {
         alert('Canvas could not be found by ID:' + canvas);
         return;
     }
     
     // specify a clear value for color buffer
     // (note that GL colors are 0.0 to 1.0, not 0 to 255)
-    gl.clearColor(0.0, 0.0, 0.0, 0.5); // black
+    gl.clearColor(0.0, 0.0, 0.0, 1.0); // black
 
     // clear the color buffer
     gl.clear(gl.COLOR_BUFFER_BIT);
