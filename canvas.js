@@ -1,7 +1,8 @@
 /*
     Mark Odell : Canvas Demos : WebGL
 */
-var canvas, gl;
+var canvas, gl,
+    POINT_SIZE = 10;
     
 // Setup function for loading the page
 window.onload = function () {
@@ -12,6 +13,8 @@ window.onload = function () {
 
 /*--------   Functional Code   ---------*/
 var leafCollection = []; // Our array of leaves
+var densityCounter = 10; // Default Density for a quasi-path 
+                         // defined when clicked-and-held mouse click.
 
 // Shader vars
 var a_Position, a_PointSize, // Vertex
@@ -41,13 +44,25 @@ var fragmentShaderCode =
     '  gl_FragColor = u_FragColor; \n' +
     '} \n';
 
+function draw_Frame(aCollection) {
+  leafCollection.forEach(function(anItem){
+    gl.vertexAttrib3f(a_Position,
+                      anItem.x, anItem.y, 0.0);
+    gl.uniform4f(u_FragColor,
+                 anItem.color.r, anItem.color.g, anItem.color.b);
+    gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
+    gl.drawArrays(gl.POINTS, 0, 1);
+  });
+}
 
 function init_Listners() {
-  canvas.
+  canvas.addEventListener("mousedown", do_MouseDown);
+  canvas.addEventListener("mouseup", do_MouseUp);
+  canvas.addEventListener("mousemove", do_MouseMove);
 } 
 // vvv Listeners vvv \\
 function do_MouseDown(event) {
-
+  
 }
 
 function do_MouseMove(event) {
@@ -58,6 +73,10 @@ function do_MouseUp(event) {
 
 }
 // ^^^ Listeners ^^^ \\
+
+function createLeaf(newX, newY, red, green, blue) {
+  return {x:newX, y:newY, color:{r:red, g:green, b:blue}};
+}
 
 /*-------- END Functional Code ---------*/
 
@@ -100,7 +119,7 @@ function init_canvas(){
 /*-- END Init functions for Canvas --*/
 
 // Init shaders -----------------------------------------------
-// curtosity of Jim Mildrew
+// curtosity of Jim Mildrew, much praise
 
 function initShaders(gl, vshader, fshader) {
   
