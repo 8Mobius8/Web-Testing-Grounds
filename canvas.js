@@ -28,8 +28,6 @@ function init_ShaderAttrs() {
   if (a_PointSize < 0) { console.log('Cannot get a_PointSize\n')};
   u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
   if (!u_FragColor) { console.log('Cannot get u_FragColor\n')}
-
-  gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
 }
 
 var vertexShaderCode = 
@@ -49,13 +47,16 @@ var fragmentShaderCode =
 
 function draw_Frame(aCollection) {
   gl.clear(gl.COLOR_BUFFER_BIT);
-  init_ShaderAttrs();
+
   leafCollection.forEach(function(anItem){
+    init_ShaderAttrs();
+    gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
     gl.vertexAttrib3f(a_Position,
                       anItem.x, anItem.y, 0.0);
     gl.uniform4f(u_FragColor,
                  anItem.color.r, anItem.color.g, anItem.color.b, 1.0);
     gl.drawArrays(gl.POINTS, 0, 1);
+    a_PointSize = a_Position = u_FragColor = undefined;
   });
 }
 
@@ -63,13 +64,15 @@ function init_Listners() {
   canvas.addEventListener("mousedown", do_MouseDown);
   canvas.addEventListener("mouseup", do_MouseUp);
   canvas.addEventListener("mousemove", do_MouseMove);
+  document.getElementById("erase").onclick = eraseAll;
+  //document.getElementById("density_slider").onSelect;
 } 
 // vvv Listeners vvv \\
 function do_MouseDown(event) {
   mouseDown = true;
   var downPt = getPtMouseEvent(event);
   leafCollection.push(
-    createLeaf(downPt.x, downPt.y, 1.0, 0.0, 0.0));
+    createLeaf(downPt.x, downPt.y, 1.0, randomColor(), 0.0));
   draw_Frame(leafCollection);
   eventCounter++;
 }
@@ -79,8 +82,10 @@ function do_MouseMove(event) {
     if(eventCounter%density == 0){
 
       var movePt = getPtMouseEvent(event);
+      console.log('Got 10th mouse event');
       leafCollection.push(
-        createLeaf(movePt.x, movePt.y, 1.0, 0.0, 0.0));
+        createLeaf(movePt.x, movePt.y, 1.0, randomColor(), 0.0));
+      console.log(leafCollection.toString());
       draw_Frame(leafCollection);
     }
 
@@ -97,13 +102,26 @@ function createLeaf(newX, newY, red, green, blue) {
   return {x:newX, y:newY, color:{r:red, g:green, b:blue}};
 }
 
+
+function randomColor() {
+  var aClr = Math.random();
+  console.log(aClr);
+  return aClr;
+}
 /*-------- END Functional Code ---------*/
 
 function getPtMouseEvent(event) {
-    return {
-        x: (event.clientX - canvas.offsetLeft - canvas.width/2) / (canvas.width/2),
-        y: (event.clienty - canvas.offsetTop - canvas.height/2) / (canvas.height/2)
-    };
+  var mouseX = event.clientX - canvas.offsetLeft,
+      mouseY = event.clientY - canvas.offsetTop;
+  
+  var glPt = {x:(mouseX - canvas.width/2) / (canvas.width/2), 
+              y:(canvas.height/2 - mouseY) / (canvas.height/2)};
+  return glPt;
+}
+
+function eraseAll() {
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  leafCollection = [];
 }
 
 /*--   Init functions for Canvas   --*/
