@@ -30,6 +30,15 @@ h1 {
 	background-color: #000;
 	border: 2px solid rgba(255, 0, 0, 0.4);
 }
+.logo {
+	width: 3.0em;
+	height: 60px;
+	display: block;
+	background: url(logo.svg);
+	background-size: 3.0em 60px;
+	position: fixed;
+	margin: 5px
+}
 .tool-bar {
 	position: fixed;
 	padding: 0 2px;
