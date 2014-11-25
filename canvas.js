@@ -1,34 +1,69 @@
 /*
     Mark Odell : Canvas Demos : WebGL
 */
-var canvas, gl,
-    POINT_SIZE = 10,
-    density = 10; // Default Density for a quasi-path 
-                  // defined when clicked-and-held mouse click.
+var canvas, gl;
     
 // Setup function for loading the page
 window.onload = function () {
-    init_canvas();
-    init_Listners();
-};
+  init_canvas();
+  init_Listners();
+
+  var nPoints = createVerticesBuffers(gl);
+  if(!nPoints){
+    console.log("Unable to create points");
+  }
+
+  var nIndices = createIndicesBuffers(gl);
+  if (!nIndices) {
+    alert("Unable to create points.");
+    return;
+  }
+
+  var nFaces = 6,
+      nVtxsFace = 4;
+
+  var animate = function() {
+    setupView(gl);
+    drawFaceLoops(gl, nPoints, nFaces, nVtxsFace);
+    window.requestAnimationFrame(animate);
+  }
+
+  animate();
+}
 
 /*--------   Functional Code   ---------*/
-var leafCollection = [], // Our array of leaves
-    mouseDown,
-    eventCounter = 0; 
+// Program vars
+var POINT_SIZE = 10.0,
+    nFaces = 6,
+    nVtxsFace = 4;
+
+var zehCube = new Float32Array([
+  //positions and colors interleaved
+   0.7,  0.7,  0.7,    1.0, 1.0, 1.0,
+  -0.7,  0.7,  0.7,    0.0, 1.0, 1.0,
+  -0.7, -0.7,  0.7,    0.0, 0.0, 1.0,
+   0.7, -0.7,  0.7,    1.0, 0.0, 1.0,
+  -0.7,  0.7, -0.7,    0.0, 1.0, 0.0,
+   0.7,  0.7, -0.7,    1.0, 1.0, 0.0,
+   0.7, -0.7, -0.7,    1.0, 0.0, 0.0,
+  -0.7, -0.7, -0.7,    0.0, 0.0, 0.0
+]);
+var zehCube_pWidth = 3,  // how many position coords per vertex
+    zehCube_cWidth = 3,  // how many color coords per vertex
+    zehCube_vertexWidth = zehCube_pWidth + zehCube_cWidth;
+
+var zehCube_ix = new Uint8Array([
+  0, 1, 2, 3,
+  4, 5, 6, 7,
+  5, 0, 3, 6,
+  1, 4, 7, 2,
+  5, 4, 1, 0,
+  3, 2, 7, 6
+]);
 
 // Shader vars
 var a_Position, a_PointSize, // Vertex
-    u_FragColor;             // Fragment
-
-function init_ShaderAttrs() {
-  a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-  if (a_Position < 0) { console.log('Cannot get a_Position\n')};
-  a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
-  if (a_PointSize < 0) { console.log('Cannot get a_PointSize\n')};
-  u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-  if (!u_FragColor) { console.log('Cannot get u_FragColor\n')}
-}
+    a_Color;             // Fragment
 
 var vertexShaderCode = 
     'attribute vec4 a_Position; \n' +
@@ -40,24 +75,124 @@ var vertexShaderCode =
 
 var fragmentShaderCode = 
     'precision mediump float; \n' +
-    'uniform vec4 u_FragColor; \n' +
+    'uniform vec4 a_Color; \n' +
     'void main() { \n' +
-    '  gl_FragColor = u_FragColor; \n' +
+    '  gl_FragColor = a_Color; \n' +
     '} \n';
 
-function draw_Frame(aCollection) {
-  gl.clear(gl.COLOR_BUFFER_BIT);
+function setupView(gl) {
+  var angleStep = 45.0; // rotation angle/sec
+  
+  if(!setupView.time) { // initalize static vars
+    setupView.angle = 0.0;
+    setupView.time = Date.now();
+  }
 
-  leafCollection.forEach(function(anItem){
-    init_ShaderAttrs();
-    gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
-    gl.vertexAttrib3f(a_Position,
-                      anItem.x, anItem.y, 0.0);
-    gl.uniform4f(u_FragColor,
-                 anItem.color.r, anItem.color.g, anItem.color.b, 1.0);
-    gl.drawArrays(gl.POINTS, 0, 1);
-    a_PointSize = a_Position = u_FragColor = undefined;
-  });
+  // Update time
+  var now = Date.now();
+  var elapsed = now - setupView.time;
+  setupView.time = now;
+
+  // Update the angle adjusted by elapsed time
+  setupView.angle += (angleStep * elapsed) / 1000.0;
+  setupView.angle %= 360;
+
+  // Using gl-matrix.js library (http://glmatrix.net)
+
+  var mvpMatrix = mat4.create();
+  
+  var modelMatrix = mat4.create();
+  var thetaDegrees = setupView.angle,  // 10,
+      theta = glMatrix.toRadian(thetaDegrees);
+  mat4.rotateX(modelMatrix, mat4.create(), theta);
+  mat4.rotateY(modelMatrix, modelMatrix, theta);
+  mat4.multiply(mvpMatrix, modelMatrix, mvpMatrix);
+  
+  var viewMatrix = mat4.create();
+  var eye = [0.2, -0.2, 0.5],
+      center = [0.0, 0.0, 0.0],
+      up = [0.0, 1.0, 0.0];
+  mat4.lookAt(viewMatrix, eye, center, up);
+  mat4.multiply(mvpMatrix, viewMatrix, mvpMatrix);
+
+  var projectionMatrix = mat4.create();
+  var left = -3.0,
+      right = 3.0,
+      bottom = -3.0,
+      top = 3.0,
+      near = -5.0,
+      far = 1000.0;
+  mat4.ortho(projectionMatrix, left, right, bottom, top, near, far);
+  mat4.multiply(mvpMatrix, projectionMatrix, mvpMatrix);
+  
+  // set the transform matrix in the vertex shader
+  var u_MVPMatrix = gl.getUniformLocation(gl.program, 'u_MVPMatrix');
+  gl.uniformMatrix4fv(u_MVPMatrix, false, mvpMatrix);
+}
+
+function createVerticesBuffers(gl, vxs){
+
+  // Create a vertex buffer
+  var vBuffer = gl.createBuffer();
+  if(!vBuffer) {
+    console.log("Cannot create vertex buffer but carrying on.\n");
+  }
+
+  // Binding buffer sets it to be used in next draw?
+  // Once a buffer is bound and cannot be bound again.
+  gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, zehCube, gl.STATIC_DRAW);
+
+  var fltsize = zehCube.BYTES_PER_ELEMENT;
+  var stride         = zehCube_vertexWidth * fltsize,
+      positionOffset = 0, //* fltfize,
+      colorOffset    = zehCube_pWidth * fltsize;
+  
+  // How to draw vertices
+  a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  gl.vertexAttribPointer(a_Position, zehCube_pWidth, gl.FLOAT, false, 
+                         stride, positionOffset);
+  gl.enableVertexAttribArray(a_Position);
+
+  // How to draw Color Data
+  a_Color = gl.getUniformLocation(gl.program, 'a_Color');
+  gl.vertexAttribPointer(a_Color, zehCube_cWidth, gl.FLOAT, false,
+                         stride, colorOffset);
+  gl.enableVertexAttribArray(a_Color);
+
+  // Size of the vertices drawn
+  a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
+  gl.vertexAttrib1f(a_PointSize, POINT_SIZE);
+
+  // Numbah of vertices
+  return zehCube.length / zehCube_vertexWidth;
+}
+
+function createIndicesBuffers(gl, ins){
+  var iBuffer = gl.createBuffer();
+  if (!iBuffer) {
+    alert("Unable to create index buffer.");
+    return 0;
+  }
+  
+  // make iBuffer the "current" buffer and copy data into it
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, zehCube_ix, gl.STATIC_DRAW);
+  
+  // return the number of vertices (as in the array of indices)
+  return zehCube_ix.length;
+}
+
+function draw_Frame(gl, nPoints, nFaces, nVtxsFace) {
+  // Clear and draw the points
+  gl.clearColor(0.2, 0.2, 0.2, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.POINTS, 0, nPoints);
+
+    // draw the face loops
+  for (var face = 0; face < nFaces; face++) {
+    gl.drawElements(gl.LINE_LOOP, nVtxsFace, gl.UNSIGNED_BYTE, face * nVtxsFace);
+  } 
 }
 
 function init_Listners() {
@@ -65,50 +200,29 @@ function init_Listners() {
   canvas.addEventListener("mouseup", do_MouseUp);
   canvas.addEventListener("mousemove", do_MouseMove);
   document.getElementById("erase").onclick = eraseAll;
-  //document.getElementById("density_slider").onSelect;
 } 
 // vvv Listeners vvv \\
 function do_MouseDown(event) {
-  mouseDown = true;
-  var downPt = getPtMouseEvent(event);
-  leafCollection.push(
-    createLeaf(downPt.x, downPt.y, 1.0, randomColor(), 0.0));
-  draw_Frame(leafCollection);
-  eventCounter++;
+
 }
 
 function do_MouseMove(event) {
-  if(mouseDown) {
-    if(eventCounter%density == 0){
 
-      var movePt = getPtMouseEvent(event);
-      console.log('Got 10th mouse event');
-      leafCollection.push(
-        createLeaf(movePt.x, movePt.y, 1.0, randomColor(), 0.0));
-      console.log(leafCollection.toString());
-      draw_Frame(leafCollection);
-    }
-
-    eventCounter++;
-  }
 }
 
 function do_MouseUp(event) {
-  mouseDown = false;
+  
 }
 // ^^^ Listeners ^^^ \\
 
-function createLeaf(newX, newY, red, green, blue) {
-  return {x:newX, y:newY, color:{r:red, g:green, b:blue}};
-}
 
+/*-------- END Functional Code ---------*/
 
 function randomColor() {
   var aClr = Math.random();
   console.log(aClr);
   return aClr;
 }
-/*-------- END Functional Code ---------*/
 
 function getPtMouseEvent(event) {
   var mouseX = event.clientX - canvas.offsetLeft,
