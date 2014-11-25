@@ -19,12 +19,9 @@ window.onload = function () {
     return;
   }
 
-  var nFaces = 6,
-      nVtxsFace = 4;
-
   var animate = function() {
     setupView(gl);
-    drawFaceLoops(gl, nPoints, nFaces, nVtxsFace);
+    draw_Frame(gl, nPoints, nFaces, nVtxsFace);
     window.requestAnimationFrame(animate);
   }
 
@@ -67,17 +64,21 @@ var a_Position, a_PointSize, // Vertex
 
 var vertexShaderCode = 
     'attribute vec4 a_Position; \n' +
+    'uniform mat4 u_MVPMatrix; \n' +
     'attribute float a_PointSize; \n' +
+    'attribute vec4 a_Color; \n' +
+    'varying vec4 v_Color; \n' +
     'void main() { \n' +
-    '  gl_Position = a_Position; \n' + 
+    '  gl_Position = u_MVPMatrix * a_Position; \n' +
     '  gl_PointSize = a_PointSize; \n' +
+    '  v_Color = a_Color; \n' +
     '} \n';
 
 var fragmentShaderCode = 
     'precision mediump float; \n' +
-    'uniform vec4 a_Color; \n' +
+    'varying vec4 v_Color; \n' +
     'void main() { \n' +
-    '  gl_FragColor = a_Color; \n' +
+    '  gl_FragColor = v_Color; \n' +
     '} \n';
 
 function setupView(gl) {
@@ -235,7 +236,6 @@ function getPtMouseEvent(event) {
 
 function eraseAll() {
   gl.clear(gl.COLOR_BUFFER_BIT);
-  leafCollection = [];
 }
 
 /*--   Init functions for Canvas   --*/
@@ -244,26 +244,17 @@ function init_canvas(){
     canvas = document.getElementById("canvas");
     canvas.width = window.innerWidth - 20;
     canvas.height = window.innerHeight - 20;
-        gl = canvas.getContext('webgl');
+    gl = canvas.getContext('webgl');
     if(!gl) {
         alert('Canvas could not be found by ID:' + canvas);
         return;
     }
-    
-    // specify a clear value for color buffer
-    // (note that GL colors are 0.0 to 1.0, not 0 to 255)
-    gl.clearColor(0.0, 0.0, 0.0, 1.0); // black
-
-    // clear the color buffer
-    gl.clear(gl.COLOR_BUFFER_BIT);
 
     // initialize the shaders
     if (!initShaders(gl, vertexShaderCode, fragmentShaderCode)) {
         alert('Cannot initialize the shaders.');
         return;
     }
-
-    gl.drawArrays(gl.POINTS, 0, 1);
 }
 /*-- END Init functions for Canvas --*/
 
