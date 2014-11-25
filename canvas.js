@@ -25,7 +25,7 @@ window.onload = function () {
   var animate = function() {
     setupView(gl);
     draw_Frame(gl, nPoints, nFaces, nVtxsFace);
-    window.requestAnimationFrame(animate);
+    //window.requestAnimationFrame(animate);
   }
 
   animate();
@@ -35,7 +35,7 @@ window.onload = function () {
 // Program vars
 var POINT_SIZE = 30.0,
     nFaces = 6,
-    nVtxsFace = 4;
+    nVtxsFace = 10;
 
 var vertexShaderCode = 
     'attribute vec4 a_Position; \n' +
@@ -110,38 +110,27 @@ function createVertices(gl) {
   
   // define a block of binary data interpreted as Float32Array
   
-  var vertexPositionsColors = new Float32Array([
-    // Red Face
-     0.7,  0.7,  0.7,    1.0, 0.0, 0.0, // 0
-    -0.7,  0.7,  0.7,    1.0, 0.0, 0.0, // 1
-    -0.7, -0.7,  0.7,    1.0, 0.0, 0.0, // 2
-     0.7, -0.7,  0.7,    1.0, 0.0, 0.0, // 3
-    // Blue Face
-    -0.7,  0.7,  0.7,    0.0, 0.0, 1.0, // 1
-    -0.7,  0.7, -0.7,    0.0, 0.0, 1.0, // 4
-    -0.7, -0.7, -0.7,    0.0, 0.0, 1.0, // 7
-    -0.7, -0.7,  0.7,    0.0, 0.0, 1.0, // 2
-    // Orange Face
-    -0.7,  0.7, -0.7,    1.0, 0.64, 0.0, // 4
-     0.7,  0.7, -0.7,    1.0, 0.64, 0.0, // 5
-     0.7, -0.7, -0.7,    1.0, 0.64, 0.0, // 6
-    -0.7, -0.7, -0.7,    1.0, 0.64, 0.0, // 7
-    // Green Face
-     0.7,  0.7, -0.7,    0.0, 1.0, 0.0, // 5
-     0.7,  0.7,  0.7,    0.0, 1.0, 0.0, // 0
-     0.7, -0.7,  0.7,    0.0, 1.0, 0.0, // 3
-     0.7, -0.7, -0.7,    0.0, 1.0, 0.0, // 6
-    // White Face
-     0.7,  0.7, -0.7,    1.0, 1.0, 1.0, // 5
-    -0.7,  0.7, -0.7,    1.0, 1.0, 1.0, // 4
-    -0.7,  0.7,  0.7,    1.0, 1.0, 1.0, // 1
-     0.7,  0.7,  0.7,    1.0, 1.0, 1.0, // 0
-    // Yellow Face
-     0.7, -0.7,  0.7,    1.0, 1.0, 0.0, // 3
-    -0.7, -0.7,  0.7,    1.0, 1.0, 0.0, // 2
-    -0.7, -0.7, -0.7,    1.0, 1.0, 0.0, // 7
-     0.7, -0.7, -0.7,    1.0, 1.0, 0.0, // 6
+  var vertexPositionsColors = new Float32Array(54); // 9 vertices * 6 faces
+  var aNintendoFace = Array([
+    [ 0.8,  0.8,  0.8], // Top right
+    [ 0.4,  0.8,  0.8], 
+    [ 0.4,  0.0,  0.8], 
+    [-0.4,  0.8,  0.8], 
+    [-0.8,  0.8,  0.8], // Top left
+    [-0.8, -0.8,  0.8], // Bottom Left
+    [-0.4, -0.8,  0.8], 
+    [-0.4,  0.0,  0.8], 
+    [ 0.4, -0.8,  0.8], 
+    [ 0.8, -0.8,  0.8]  // Bottom Right
   ]);
+
+  // Create Rotation matrix to rotate about Y axis
+  // Create Rotation matrix to rotate about X axis
+  // Define colors for faces
+  for(i = 0; i < 4; i++) { // Side Faces
+    // Clone a NintendoFace and rotate
+    // Add to vertexPositionsWith specified colors
+  }
 
   var pCoords = 3,  // how many position coords per vertex
       cCoords = 3,  // how many color coords per vertex
@@ -213,11 +202,11 @@ function draw_Frame(gl, nPoints, nFaces, nVtxsFace) {
   // Clear and draw the points
   gl.clearColor(0.1, 0.1, 0.1, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  //gl.drawArrays(gl.POINTS, 0, nPoints);
+  gl.drawArrays(gl.POINTS, 0, nPoints);
 
     // draw the face loops
   for (var face = 0; face < nFaces; face++) {
-    gl.drawElements(gl.TRIANGLE_FAN, nVtxsFace, gl.UNSIGNED_BYTE, face * nVtxsFace);
+    gl.drawElements(gl.LINE_LOOP, nVtxsFace, gl.UNSIGNED_BYTE, face * nVtxsFace);
   } 
 }
 
