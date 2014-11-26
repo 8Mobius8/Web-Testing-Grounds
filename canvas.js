@@ -58,9 +58,14 @@ var fragmentShaderCode =
 
 function setupView(gl) {
   var angleStep = 45.0; // rotation angle/sec
+  var viewStep  = 0.01;   // zoom units/sec
   
   if(!setupView.time) { // initalize static vars
     setupView.angle = 0.0;
+    setupView.maxZoom = 6.0;
+    setupView.minZoom = 1.0;
+    setupView.zoom = 3.0;
+    setupView.zoomOut = false;
     setupView.time = Date.now();
   }
 
@@ -91,11 +96,17 @@ function setupView(gl) {
   mat4.lookAt(viewMatrix, eye, center, up);
   mat4.multiply(mvpMatrix, viewMatrix, mvpMatrix);
 
+  if(setupView.zoom <= setupView.minZoom)
+    setupView.zoomOut = true;
+  else if(setupView.zoom >= setupView.maxZoom)
+    setupView.zoomOut = false;
+  setupView.zoom = setupView.zoomOut ? setupView.zoom += viewStep : setupView.zoom -= viewStep;
+
   var projectionMatrix = mat4.create();
-  var left = -3.0,
-      right = 3.0,
-      bottom = -3.0,
-      top = 3.0,
+  var left   = -1*setupView.zoom,
+      right  =  1*setupView.zoom,
+      bottom = -1*setupView.zoom,
+      top    =  1*setupView.zoom,
       near = -5.0,
       far = 1000.0;
   mat4.ortho(projectionMatrix, left, right, bottom, top, near, far);
