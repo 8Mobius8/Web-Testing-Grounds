@@ -77,6 +77,14 @@ function createVertices() {
     new THREE.Vector3(-0.7, -0.7, -0.7), // 7
     new THREE.Vector3( 0.7, -0.7, -0.7)  // 6
   );
+  
+  var color = 0xff0000 ;
+  for(var i = 0; i < 6; i++){
+    geo.faces.push(
+      new THREE.Face3(4*i, 4*i+1, 4*i+2),
+      new THREE.Face3(4*i, 4*i+2, 4*i+3)
+    );
+  }
 
   geo.computeBoundingSphere();
   return geo;
