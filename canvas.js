@@ -1,24 +1,33 @@
 /*
-    Mark Odell : Canvas Demos : WebGL
+    Mark Odell : renderer Demos : WebGL
 */
-var canvas, scene, cam;
-var cube;
+var renderer, scene, cam,
+    cube, tetra, sphere, plane,
+    dlight, amblight, ptLgtObj;
     
 // Setup function for loading the page
-var WIDTH = window.innerHeight, HEIGHT = window.innerHeight;
+var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
 
 window.onload = function () {
   
   setupView();
 
-  var geometry = createVertices();
+  // Initalize and create all objects
+  makeObjects();  
 
-  var material = new THREE.MeshBasicMaterial( 
-    { color: 0x00ff00,
-      wireframe: false
-     } );
-  cube = new THREE.Mesh( geometry, material );
-  scene.add( cube );
+  var axis = new THREE.AxisHelper(); 
+  scene.add( axis );
+
+  // Add lights
+  scene.add(dlight);
+  //scene.add(amblight);
+  scene.add(ptLgtObj);
+
+  // Add geometric objs
+  scene.add(cube);
+  scene.add(tetra)
+  scene.add(sphere);
+  scene.add(plane);
 
   startDrawing();
 }
@@ -26,85 +35,135 @@ window.onload = function () {
 /*--------   Functional Code   ---------*/
 
 function setupView() {
-    // Creates a new camera matrix and world coordnates based on view of camera
+  // Creates a new camera matrix and world coordnates based on view of camera
   // aka defines cliping space
   scene = new THREE.Scene();
-  cam = new THREE.OrthographicCamera(
-       -2,  // Left bound
-        2,  // Right bound
-        2,  // Top bound
-       -2,  // Bottom Bound
-        0.1, // Near bound
-        10); // Far bound
-  //cam.lookAt(new THREE.Vector3(0,0,-5));
-  canvas = new THREE.WebGLRenderer();
-  canvas.setSize(WIDTH - 20, HEIGHT - 20);
-  document.body.appendChild( canvas.domElement );
-}
+  cam = new THREE.PerspectiveCamera(75, WIDTH/HEIGHT, 1, 1000)
 
-function createVertices() {
-  var geo = new THREE.Geometry();
+  cam.lookAt(new THREE.Vector3(0,0,-5));
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(WIDTH - 20, HEIGHT - 20);
+  document.body.appendChild( renderer.domElement );
 
-  geo.vertices.push(
-    // Red Face 
-    new THREE.Vector3( 0.7,  0.7,  0.7), // 0
-    new THREE.Vector3(-0.7,  0.7,  0.7), // 1
-    new THREE.Vector3(-0.7, -0.7,  0.7), // 2
-    new THREE.Vector3( 0.7, -0.7,  0.7), // 3
-    // Blue Face
-    new THREE.Vector3(-0.7,  0.7,  0.7), // 1
-    new THREE.Vector3(-0.7,  0.7, -0.7), // 4
-    new THREE.Vector3(-0.7, -0.7, -0.7), // 7
-    new THREE.Vector3(-0.7, -0.7,  0.7), // 2
-    // Orange Face
-    new THREE.Vector3(-0.7,  0.7, -0.7), // 4
-    new THREE.Vector3( 0.7,  0.7, -0.7), // 5
-    new THREE.Vector3( 0.7, -0.7, -0.7), // 6
-    new THREE.Vector3(-0.7, -0.7, -0.7), // 7
-    // Green Face
-    new THREE.Vector3( 0.7,  0.7, -0.7), // 5
-    new THREE.Vector3( 0.7,  0.7,  0.7), // 0
-    new THREE.Vector3( 0.7, -0.7,  0.7), // 3
-    new THREE.Vector3( 0.7, -0.7, -0.7), // 6
-    // White Face
-    new THREE.Vector3( 0.7,  0.7, -0.7), // 5
-    new THREE.Vector3(-0.7,  0.7, -0.7), // 4
-    new THREE.Vector3(-0.7,  0.7,  0.7), // 1
-    new THREE.Vector3( 0.7,  0.7,  0.7), // 0
-    // Yellow Face
-    new THREE.Vector3( 0.7, -0.7,  0.7), // 3
-    new THREE.Vector3(-0.7, -0.7,  0.7), // 2
-    new THREE.Vector3(-0.7, -0.7, -0.7), // 7
-    new THREE.Vector3( 0.7, -0.7, -0.7)  // 6
-  );
-  
-  var color = 0xff0000 ;
-  for(var i = 0; i < 6; i++){
-    geo.faces.push(
-      new THREE.Face3(4*i, 4*i+1, 4*i+2),
-      new THREE.Face3(4*i, 4*i+2, 4*i+3)
-    );
-  }
+  // Shadow casting
+  renderer.shadowMapEnabled = true;
+  renderer.shadowMapSoft = false;
 
-  geo.computeBoundingSphere();
-  return geo;
-}
+  renderer.shadowCameraNear = 3;
+  renderer.shadowCameraFar = cam.far;
+  renderer.shadowCameraFov = 50;
 
-function createIndices(gl) {
+  renderer.shadowMapBias = 0.0039;
+  renderer.shadowMapDarkness = 0.5;
+  renderer.shadowMapWidth = 1024;
+  renderer.shadowMapHeight = 1024;
+
+  // Listen for resizing window and adjust view
+  window.addEventListener('resize', onWindowResize, false);
 }
 
 function startDrawing() {
-  cam.position.z = 5;
+  cam.position.set(5, 5, 5);
+
+  cam.lookAt(new THREE.Vector3(0, 0, 0));
+
+  cube.position.set(2, 0, 2);
+  tetra.position.set(-2, 0, 2);
+  sphere.position.set(0, 0, -2);
+
   var render = function () {
     requestAnimationFrame( render );
-
     cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+    tetra.rotation.x += 0.01;
+    sphere.rotation.x += 0.01;
 
-    canvas.render(scene, cam);
+    renderer.render(scene, cam);
   };
 
   render();
 }
 
+function makeObjects() {
+  
+  // Cube
+  var geometry = new THREE.BoxGeometry(1,1,1);
+
+  var material = new THREE.MeshLambertMaterial( {
+    color: 0xff0000,
+    opacity: 1.0,
+
+    reflectivity: 0.5,
+
+    shading: THREE.SmoothShading,
+    blending: THREE.NormalBlending,
+  } );
+
+  cube = new THREE.Mesh(geometry, material);
+
+  // Tetrahedron
+  geometry = new THREE.TetrahedronGeometry(1, 0);
+
+  material = new THREE.MeshBasicMaterial( {
+    color: 0xff0000,
+    ambient: 0x00ff00,
+    emissive: 0x0000ff,
+    opacity: 1.0,
+
+    reflectivity: 0.5,
+    refractionRatio: 1.0,
+
+    shading: THREE.SmoothShading,
+    blending: THREE.NormalBlending,
+
+    wireframe: false,
+
+    vertexColors: THREE.FaceColors
+    } );
+
+  tetra = new THREE.Mesh(geometry, material);
+
+  // Sphere
+  geometry = new THREE.SphereGeometry(1, 32, 32);
+
+  material = new THREE.MeshDepthMaterial( {
+      wireframe: true,
+    } );
+
+  sphere = new THREE.Mesh(geometry, material);
+
+  // Plain
+  geometry = new THREE.PlaneGeometry(10, 10, 5, 5);
+
+  material = new THREE.MeshLambertMaterial({color: 0x444444});
+
+  plane = new THREE.Mesh(geometry, material);
+  plane.position.y = -1;
+  plane.rotation.x = -Math.PI / 2;
+
+  // Lights
+  dlight = new THREE.DirectionalLight(0xffffff, 0.5);
+  dlight.position.x = -5;
+  dlight.position.y = 10;
+
+  amblight = new THREE.AmbientLight(0x404040); // soft white light
+
+  // Shadows
+  dlight.castShadow = true;
+  tetra.castShadow = true;
+  cube.castShadow = true;
+  sphere.castShadow = true;
+  
+  // Plane is only thing that should have shadows on it
+  // for this assignment.
+  plane.receiveShadow = true; 
+}
 /*-------- END Functional Code ---------*/
+
+function onWindowResize() {
+
+  cam.aspect = window.innerWidth / window.innerHeight;
+  cam.updateProjectionMatrix();
+
+  renderer.setSize( window.innerWidth - 20, window.innerHeight - 20);
+
+}
