@@ -17,11 +17,11 @@ window.onload = function () {
   makeObjects();  
 
   var axis = new THREE.AxisHelper(); 
-  scene.add( axis );
 
   // Add lights
   scene.add(dlight);
-  //scene.add(amblight);
+  scene.add(amblight);
+  scene.add(hlight);
 
   // Add geometric objs
   scene.add(cube);
@@ -154,9 +154,11 @@ function makeObjects() {
 
   amblight = new THREE.AmbientLight(0x404040); // soft white light
 
+  hlight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 0.5);
+
   // Shadows
   dlight.castShadow = true;
-  dlight.shadowCameraVisible = true;
+  //dlight.shadowCameraVisible = true;
 
   tetra.castShadow = true;
   cube.castShadow = true;
