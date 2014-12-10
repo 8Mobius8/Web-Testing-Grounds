@@ -3,7 +3,8 @@
 */
 var renderer, scene, cam,
     cube, tetra, sphere, plane,
-    dlight, amblight, ptLgtObj;
+    dlight, amblight, ptLgtObj,
+    time;
     
 // Setup function for loading the page
 var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
@@ -21,7 +22,6 @@ window.onload = function () {
   // Add lights
   scene.add(dlight);
   //scene.add(amblight);
-  scene.add(ptLgtObj);
 
   // Add geometric objs
   scene.add(cube);
@@ -29,6 +29,8 @@ window.onload = function () {
   scene.add(sphere);
   scene.add(plane);
 
+  // Add controls
+  var controls = new THREE.OrbitControls(cam);
   startDrawing();
 }
 
@@ -47,16 +49,6 @@ function setupView() {
 
   // Shadow casting
   renderer.shadowMapEnabled = true;
-  renderer.shadowMapSoft = false;
-
-  renderer.shadowCameraNear = 3;
-  renderer.shadowCameraFar = cam.far;
-  renderer.shadowCameraFov = 50;
-
-  renderer.shadowMapBias = 0.0039;
-  renderer.shadowMapDarkness = 0.5;
-  renderer.shadowMapWidth = 1024;
-  renderer.shadowMapHeight = 1024;
 
   // Listen for resizing window and adjust view
   window.addEventListener('resize', onWindowResize, false);
@@ -65,13 +57,18 @@ function setupView() {
 function startDrawing() {
   cam.position.set(5, 5, 5);
 
-  cam.lookAt(new THREE.Vector3(0, 0, 0));
 
   cube.position.set(2, 0, 2);
   tetra.position.set(-2, 0, 2);
   sphere.position.set(0, 0, -2);
 
   var render = function () {
+    time = 0.0001 * Date.now();
+
+    cam.lookAt({x:0, y:0, z:0});
+    // cam.position.z = Math.sin(time) * 10;
+    // cam.position.x = Math.cos(time) * 10;
+
     requestAnimationFrame( render );
     cube.rotation.x += 0.01;
     tetra.rotation.x += 0.01;
@@ -90,9 +87,6 @@ function makeObjects() {
 
   var material = new THREE.MeshLambertMaterial( {
     color: 0xff0000,
-    opacity: 1.0,
-
-    reflectivity: 0.5,
 
     shading: THREE.SmoothShading,
     blending: THREE.NormalBlending,
@@ -125,30 +119,45 @@ function makeObjects() {
   // Sphere
   geometry = new THREE.SphereGeometry(1, 32, 32);
 
-  material = new THREE.MeshDepthMaterial( {
-      wireframe: true,
-    } );
+  material = new THREE.MeshPhongMaterial( {
+      shading: THREE.SmoothShading,
+      blending: THREE.NormalBlending,
 
+      reflectivity: 10.0,
+      wireframe: false,
+    } );
+  material.shininess = 10000;
   sphere = new THREE.Mesh(geometry, material);
 
   // Plain
-  geometry = new THREE.PlaneGeometry(10, 10, 5, 5);
+  geometry = new THREE.PlaneGeometry(10, 10, 32, 32);
 
-  material = new THREE.MeshLambertMaterial({color: 0x444444});
+  material = new THREE.MeshLambertMaterial({
+    color: 0x444444,
+    shading: THREE.SmoothShading,
+    blending: THREE.NormalBlending,
+  });
 
   plane = new THREE.Mesh(geometry, material);
   plane.position.y = -1;
   plane.rotation.x = -Math.PI / 2;
 
   // Lights
-  dlight = new THREE.DirectionalLight(0xffffff, 0.5);
-  dlight.position.x = -5;
-  dlight.position.y = 10;
+  dlight = new THREE.SpotLight(0xffffff, 0.5);
+  dlight.position.set( 0, 5, 5 );
+  dlight.castShadow = true;
+  dlight.shadowMapWidth = 1024;
+  dlight.shadowMapHeight = 1024;
+  dlight.shadowCameraNear = 1;
+  dlight.shadowCameraFar = 20;
+  dlight.shadowCameraFov = 75;
 
   amblight = new THREE.AmbientLight(0x404040); // soft white light
 
   // Shadows
   dlight.castShadow = true;
+  dlight.shadowCameraVisible = true;
+
   tetra.castShadow = true;
   cube.castShadow = true;
   sphere.castShadow = true;
