@@ -154,11 +154,11 @@ function makeObjects() {
 
   amblight = new THREE.AmbientLight(0x404040); // soft white light
 
-  hlight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 0.5);
+  hlight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 1.0);
 
   // Shadows
   dlight.castShadow = true;
-  //dlight.shadowCameraVisible = true;
+  dlight.shadowCameraVisible = true;
 
   tetra.castShadow = true;
   cube.castShadow = true;
