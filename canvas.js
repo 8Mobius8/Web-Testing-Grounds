@@ -1,9 +1,11 @@
 /*
-    Mark Odell : renderer Demos : WebGL
+    Mark Odell : CS 116A : WebGL
+    The purpose of this assignment was to get familiar with ThreeJS
+    and some basic 3D concepts.
 */
 var renderer, scene, cam,
     cube, tetra, sphere, plane,
-    dlight, amblight, ptLgtObj,
+    spotLight, amblight, hemiLight,
     time;
     
 // Setup function for loading the page
@@ -11,17 +13,19 @@ var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
 
 window.onload = function () {
   
+  // Create Render and Cam position cam and look vector
   setupView();
 
   // Initalize and create all objects
   makeObjects();  
 
+  // As it indicates, helps to see which axis is where
   var axis = new THREE.AxisHelper(); 
 
   // Add lights
-  scene.add(dlight);
+  scene.add(spotLight);
   scene.add(amblight);
-  scene.add(hlight);
+  scene.add(hemiLight);
 
   // Add geometric objs
   scene.add(cube);
@@ -29,14 +33,16 @@ window.onload = function () {
   scene.add(sphere);
   scene.add(plane);
 
-  // Add controls
+  // Add controls, thanks Three JS!
   var controls = new THREE.OrbitControls(cam);
+
   startDrawing();
 }
 
-/*--------   Functional Code   ---------*/
+/*--------   Program Functional Code   ---------*/
 
 function setupView() {
+
   // Creates a new camera matrix and world coordnates based on view of camera
   // aka defines cliping space
   scene = new THREE.Scene();
@@ -63,17 +69,18 @@ function startDrawing() {
   sphere.position.set(0, 0, -2);
 
   var render = function () {
-    time = 0.0001 * Date.now();
+    time = 0.0001 * Date.now(); // Use this to determine position of objects
 
     cam.lookAt({x:0, y:0, z:0});
+    // Can have the came move around if u like
     // cam.position.z = Math.sin(time) * 10;
     // cam.position.x = Math.cos(time) * 10;
 
-    requestAnimationFrame( render );
     cube.rotation.x += 0.01;
     tetra.rotation.x += 0.01;
     sphere.rotation.x += 0.01;
 
+    requestAnimationFrame( render );
     renderer.render(scene, cam);
   };
 
@@ -82,7 +89,7 @@ function startDrawing() {
 
 function makeObjects() {
   
-  // Cube
+  // -- Cube -- \\
   var geometry = new THREE.BoxGeometry(1,1,1);
 
   var material = new THREE.MeshLambertMaterial( {
@@ -94,7 +101,7 @@ function makeObjects() {
 
   cube = new THREE.Mesh(geometry, material);
 
-  // Tetrahedron
+  //  -- Tetrahedron -- \\
   geometry = new THREE.TetrahedronGeometry(1, 0);
 
   material = new THREE.MeshBasicMaterial( {
@@ -116,7 +123,7 @@ function makeObjects() {
 
   tetra = new THREE.Mesh(geometry, material);
 
-  // Sphere
+  // -- Sphere -- \\
   geometry = new THREE.SphereGeometry(1, 32, 32);
 
   material = new THREE.MeshPhongMaterial( {
@@ -129,7 +136,7 @@ function makeObjects() {
   material.shininess = 10000;
   sphere = new THREE.Mesh(geometry, material);
 
-  // Plain
+  // -- Plane -- \\
   geometry = new THREE.PlaneGeometry(10, 10, 32, 32);
 
   material = new THREE.MeshLambertMaterial({
@@ -142,24 +149,24 @@ function makeObjects() {
   plane.position.y = -1;
   plane.rotation.x = -Math.PI / 2;
 
-  // Lights
-  dlight = new THREE.SpotLight(0xffffff, 0.5);
-  dlight.position.set( 0, 5, 5 );
-  dlight.castShadow = true;
-  dlight.shadowMapWidth = 1024;
-  dlight.shadowMapHeight = 1024;
-  dlight.shadowCameraNear = 1;
-  dlight.shadowCameraFar = 20;
-  dlight.shadowCameraFov = 75;
+  // -- Lights -- \\
+  spotLight = new THREE.SpotLight(0xffffff, 1.0);
+  spotLight.position.set( 0, 5, 5 );
+  spotLight.castShadow = true;
+  spotLight.shadowMapWidth = 1024;
+  spotLight.shadowMapHeight = 1024;
+  spotLight.shadowCameraNear = 1;
+  spotLight.shadowCameraFar = 20;
+  spotLight.shadowCameraFov = 75;
 
-  amblight = new THREE.AmbientLight(0x404040); // soft white light
+  //amblight = new THREE.AmbientLight(0x404040); // soft white light
 
-  hlight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 1.0);
+  //hemiLight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 1.0);
 
-  // Shadows
-  dlight.castShadow = true;
-  dlight.shadowCameraVisible = true;
-
+  // -- Shadows -- \\
+  spotLight.castShadow = true;
+  spotLight.shadowCameraVisible = true; // False to remove cam-like
+                                     // wireframe for light's effect
   tetra.castShadow = true;
   cube.castShadow = true;
   sphere.castShadow = true;
