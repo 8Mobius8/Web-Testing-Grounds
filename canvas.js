@@ -73,8 +73,8 @@ function startDrawing() {
 
     cam.lookAt({x:0, y:0, z:0});
     // Can have the came move around if u like
-    // cam.position.z = Math.sin(time) * 10;
-    // cam.position.x = Math.cos(time) * 10;
+     cam.position.z = Math.sin(time) * 10;
+     cam.position.x = Math.cos(time) * 10;
 
     cube.rotation.x += 0.01;
     tetra.rotation.x += 0.01;
@@ -130,7 +130,7 @@ function makeObjects() {
       shading: THREE.SmoothShading,
       blending: THREE.NormalBlending,
 
-      reflectivity: 10.0,
+      reflectivity: 5.0,
       wireframe: false,
     } );
   material.shininess = 10000;
@@ -159,9 +159,9 @@ function makeObjects() {
   spotLight.shadowCameraFar = 20;
   spotLight.shadowCameraFov = 75;
 
-  //amblight = new THREE.AmbientLight(0x404040); // soft white light
+  amblight = new THREE.AmbientLight(0x404040); // soft white light
 
-  //hemiLight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 1.0);
+  hemiLight = new THREE.HemisphereLight(0xff0000, 0x00ff00, 1.0);
 
   // -- Shadows -- \\
   spotLight.castShadow = true;
